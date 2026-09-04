@@ -25,4 +25,5 @@ export const config = {
   isProduction: nodeEnv === 'production',
   port: Number(optionalEnv('PORT', '5000')),
   clientUrl: optionalEnv('CLIENT_URL', 'http://localhost:3000'),
+  databaseUrl: requiredEnv('DATABASE_URL'),
 };
