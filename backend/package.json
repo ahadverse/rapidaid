@@ -8,6 +8,8 @@
     "build": "tsc",
     "start": "cross-env NODE_ENV=production node dist/server.js",
     "prisma:generate": "prisma generate",
+    "prisma:format": "prisma format",
+    "prisma:validate": "dotenv -e .env.development -- prisma validate",
     "prisma:migrate": "dotenv -e .env.development -- prisma migrate dev",
     "prisma:deploy": "dotenv -e .env.production -- prisma migrate deploy",
     "prisma:studio": "dotenv -e .env.development -- prisma studio",
