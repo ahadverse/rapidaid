@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express, { Application, Request, Response } from 'express';
+import { config } from './config';
 
 const app: Application = express();
 
@@ -7,7 +8,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
   cors({
-    origin: [process.env.CLIENT_URL || 'http://localhost:3000'],
+    origin: [config.clientUrl],
     credentials: true,
   }),
 );
@@ -19,7 +20,7 @@ app.get('/api/v1/health', (_req: Request, res: Response) => {
     message: 'RapidAid API is running',
     data: {
       service: 'rapidaid-api',
-      environment: process.env.NODE_ENV || 'development',
+      environment: config.env,
       uptime: Number(process.uptime().toFixed(2)),
       timestamp: new Date().toISOString(),
     },

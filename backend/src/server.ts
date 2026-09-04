@@ -1,14 +1,12 @@
-import './config/env';
+import { config } from './config';
 import { Server } from 'http';
 import app from './app';
-
-const port = Number(process.env.PORT) || 5000;
 
 let server: Server;
 
 function bootstrap(): void {
-  server = app.listen(port, () => {
-    console.log(`🚑 RapidAid API listening on http://localhost:${port}`);
+  server = app.listen(config.port, () => {
+    console.log(`RapidAid API listening on http://localhost:${config.port} [${config.env}]`);
   });
 }
 
