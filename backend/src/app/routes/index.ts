@@ -1,5 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { config } from '../../config';
+import { AuthRoutes } from '../modules/auth/auth.route';
 import sendResponse from '../utils/sendResponse';
 
 const router = Router();
@@ -9,7 +10,7 @@ type TModuleRoute = {
   route: Router;
 };
 
-const moduleRoutes: TModuleRoute[] = [];
+const moduleRoutes: TModuleRoute[] = [{ path: '/auth', route: AuthRoutes }];
 
 moduleRoutes.forEach(({ path, route }) => {
   router.use(path, route);
