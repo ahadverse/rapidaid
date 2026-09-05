@@ -56,6 +56,20 @@ enum TripStatus {
   CANCELLED
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+}
+
+enum NotificationType {
+  DISPATCH
+  TRIP_STATUS
+  PAYMENT
+  SYSTEM
+}
+
 model User {
   id        String     @id @default(uuid())
   name      String
@@ -72,6 +86,9 @@ model User {
 
   driverProfile     DriverProfile?
   emergencyRequests EmergencyRequest[]
+  payments          Payment[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
 
   @@index([role])
   @@index([status])
@@ -187,10 +204,67 @@ model Trip {
   ambulance Ambulance        @relation(fields: [ambulanceId], references: [id], onDelete: Restrict)
   driver    DriverProfile    @relation(fields: [driverId], references: [id], onDelete: Restrict)
   hospital  Hospital?        @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
+  payments  Payment[]
 
   @@index([status])
   @@index([driverId])
   @@index([ambulanceId])
   @@index([hospitalId])
   @@map("trips")
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  tripId          String
+  patientId       String
+  amount          Decimal       @db.Decimal(10, 2)
+  transactionId   String        @unique
+  status          PaymentStatus @default(PENDING)
+  gateway         String        @default("SSLCommerz")
+  valId           String?
+  paidAt          DateTime?
+  gatewayResponse Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  trip    Trip @relation(fields: [tripId], references: [id], onDelete: Restrict)
+  patient User @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@index([status])
+  @@index([patientId])
+  @@index([tripId])
+  @@map("payments")
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType @default(SYSTEM)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actorId   String
+  action    String
+  entity    String
+  entityId  String
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([entity, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
