@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express';
 import { config } from '../../config';
 import { AmbulanceRoutes } from '../modules/ambulance/ambulance.route';
 import { AuthRoutes } from '../modules/auth/auth.route';
+import { DriverRoutes } from '../modules/driver/driver.route';
 import { HospitalRoutes } from '../modules/hospital/hospital.route';
 import { UserRoutes } from '../modules/user/user.route';
 import sendResponse from '../utils/sendResponse';
@@ -18,6 +19,7 @@ const moduleRoutes: TModuleRoute[] = [
   { path: '/users', route: UserRoutes },
   { path: '/ambulances', route: AmbulanceRoutes },
   { path: '/hospitals', route: HospitalRoutes },
+  { path: '/drivers', route: DriverRoutes },
 ];
 
 moduleRoutes.forEach(({ path, route }) => {
