@@ -31,6 +31,31 @@ enum AmbulanceStatus {
   MAINTENANCE
 }
 
+enum Priority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum RequestStatus {
+  PENDING
+  DISPATCHED
+  COMPLETED
+  CANCELLED
+  NO_AMBULANCE_AVAILABLE
+}
+
+enum TripStatus {
+  DISPATCHED
+  EN_ROUTE_TO_PICKUP
+  PATIENT_PICKED_UP
+  EN_ROUTE_TO_HOSPITAL
+  ARRIVED_AT_HOSPITAL
+  COMPLETED
+  CANCELLED
+}
+
 model User {
   id        String     @id @default(uuid())
   name      String
@@ -45,7 +70,8 @@ model User {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  driverProfile DriverProfile?
+  driverProfile     DriverProfile?
+  emergencyRequests EmergencyRequest[]
 
   @@index([role])
   @@index([status])
@@ -65,6 +91,7 @@ model DriverProfile {
 
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   ambulance Ambulance? @relation(fields: [ambulanceId], references: [id], onDelete: SetNull)
+  trips     Trip[]
 
   @@index([isAvailable])
   @@index([ambulanceId])
@@ -85,10 +112,85 @@ model Ambulance {
   updatedAt   DateTime        @updatedAt
 
   drivers DriverProfile[]
+  trips   Trip[]
 
   @@index([status])
   @@index([type])
   @@index([stationArea])
   @@index([isDeleted])
   @@map("ambulances")
+}
+
+model Hospital {
+  id              String    @id @default(uuid())
+  name            String
+  address         String
+  area            String
+  phone           String
+  specializations String[]
+  availableBeds   Int       @default(0)
+  isDeleted       Boolean   @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  trips Trip[]
+
+  @@index([area])
+  @@index([name])
+  @@index([isDeleted])
+  @@map("hospitals")
+}
+
+model EmergencyRequest {
+  id                     String         @id @default(uuid())
+  patientId              String
+  pickupAddress          String
+  pickupLat              Float?
+  pickupLng              Float?
+  patientCondition       String
+  priority               Priority       @default(MEDIUM)
+  status                 RequestStatus  @default(PENDING)
+  requestedAmbulanceType AmbulanceType?
+  cancelReason           String?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  patient User  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  trip    Trip?
+
+  @@index([status])
+  @@index([priority])
+  @@index([patientId])
+  @@index([status, priority, createdAt])
+  @@map("emergency_requests")
+}
+
+model Trip {
+  id           String     @id @default(uuid())
+  requestId    String     @unique
+  ambulanceId  String
+  driverId     String
+  hospitalId   String?
+  status       TripStatus @default(DISPATCHED)
+  distanceKm   Decimal?   @db.Decimal(6, 2)
+  fare         Decimal?   @db.Decimal(10, 2)
+  cancelReason String?
+  dispatchedAt DateTime   @default(now())
+  pickedUpAt   DateTime?
+  arrivedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  request   EmergencyRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  ambulance Ambulance        @relation(fields: [ambulanceId], references: [id], onDelete: Restrict)
+  driver    DriverProfile    @relation(fields: [driverId], references: [id], onDelete: Restrict)
+  hospital  Hospital?        @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([driverId])
+  @@index([ambulanceId])
+  @@index([hospitalId])
+  @@map("trips")
 }
