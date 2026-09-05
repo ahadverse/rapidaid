@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { config } from '../../config';
 import { AuthRoutes } from '../modules/auth/auth.route';
+import { UserRoutes } from '../modules/user/user.route';
 import sendResponse from '../utils/sendResponse';
 
 const router = Router();
@@ -10,7 +11,10 @@ type TModuleRoute = {
   route: Router;
 };
 
-const moduleRoutes: TModuleRoute[] = [{ path: '/auth', route: AuthRoutes }];
+const moduleRoutes: TModuleRoute[] = [
+  { path: '/auth', route: AuthRoutes },
+  { path: '/users', route: UserRoutes },
+];
 
 moduleRoutes.forEach(({ path, route }) => {
   router.use(path, route);

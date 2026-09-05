@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { BD_PHONE_REGEX, PASSWORD_MIN_LENGTH } from './auth.constant';
+import { BD_PHONE_REGEX } from '../user/user.constant';
+import { PASSWORD_MIN_LENGTH } from './auth.constant';
 
 const register = z.object({
   body: z.object({

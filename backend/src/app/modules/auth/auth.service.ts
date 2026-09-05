@@ -5,7 +5,8 @@ import AppError from '../../errors/AppError';
 import { getGoogleClient } from '../../lib/googleClient';
 import prisma from '../../lib/prisma';
 import { createToken, verifyToken } from '../../utils/jwt';
-import { GOOGLE_SCOPES, publicUserSelect } from './auth.constant';
+import { publicUserSelect } from '../user/user.constant';
+import { GOOGLE_SCOPES } from './auth.constant';
 import {
   TAuthTokens,
   TChangePasswordPayload,
