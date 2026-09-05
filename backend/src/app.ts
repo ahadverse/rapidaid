@@ -1,5 +1,9 @@
 import cors from 'cors';
 import express, { Application, Request, Response } from 'express';
+import globalErrorHandler from './app/middlewares/globalErrorHandler';
+import notFound from './app/middlewares/notFound';
+import router from './app/routes';
+import sendResponse from './app/utils/sendResponse';
 import { config } from './config';
 
 const app: Application = express();
@@ -13,23 +17,10 @@ app.use(
   }),
 );
 
-app.get('/api/v1/health', (_req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
-    statusCode: 200,
-    message: 'RapidAid API is running',
-    data: {
-      service: 'rapidaid-api',
-      environment: config.env,
-      uptime: Number(process.uptime().toFixed(2)),
-      timestamp: new Date().toISOString(),
-    },
-  });
-});
+app.use('/api/v1', router);
 
 app.get('/', (_req: Request, res: Response) => {
-  res.status(200).json({
-    success: true,
+  sendResponse(res, {
     statusCode: 200,
     message: 'Welcome to RapidAid — Emergency Response Platform',
     data: {
@@ -37,5 +28,8 @@ app.get('/', (_req: Request, res: Response) => {
     },
   });
 });
+
+app.use(notFound);
+app.use(globalErrorHandler);
 
 export default app;
