@@ -15,10 +15,15 @@
     "prisma:deploy": "dotenv -e .env.production -- prisma migrate deploy",
     "prisma:studio": "dotenv -e .env.development -- prisma studio",
     "prisma:reset": "dotenv -e .env.development -- prisma migrate reset",
+    "seed": "dotenv -e .env.development -- prisma db seed",
+    "seed:prod": "dotenv -e .env.production -- prisma db seed",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\""
+  },
+  "prisma": {
+    "seed": "ts-node --transpile-only prisma/seed.ts"
   },
   "keywords": [
     "ambulance",
@@ -32,6 +37,7 @@
   "license": "MIT",
   "dependencies": {
     "@prisma/client": "6.19.3",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2"
@@ -48,6 +54,7 @@
     "globals": "^17.12.0",
     "prettier": "^3.9.6",
     "prisma": "6.19.3",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.69.0"

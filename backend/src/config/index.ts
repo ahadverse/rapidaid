@@ -26,4 +26,5 @@ export const config = {
   port: Number(optionalEnv('PORT', '5000')),
   clientUrl: optionalEnv('CLIENT_URL', 'http://localhost:3000'),
   databaseUrl: requiredEnv('DATABASE_URL'),
+  bcryptSaltRounds: Number(optionalEnv('BCRYPT_SALT_ROUNDS', '12')),
 };
