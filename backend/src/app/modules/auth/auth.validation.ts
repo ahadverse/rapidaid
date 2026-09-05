@@ -12,4 +12,11 @@ const register = z.object({
   }),
 });
 
-export const AuthValidation = { register };
+const login = z.object({
+  body: z.object({
+    email: z.string().trim().toLowerCase().pipe(z.email('A valid email is required')),
+    password: z.string().min(1, 'Password is required'),
+  }),
+});
+
+export const AuthValidation = { register, login };

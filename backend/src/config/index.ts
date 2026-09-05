@@ -27,4 +27,10 @@ export const config = {
   clientUrl: optionalEnv('CLIENT_URL', 'http://localhost:3000'),
   databaseUrl: requiredEnv('DATABASE_URL'),
   bcryptSaltRounds: Number(optionalEnv('BCRYPT_SALT_ROUNDS', '12')),
+  jwt: {
+    accessSecret: requiredEnv('JWT_ACCESS_SECRET'),
+    accessExpiresIn: optionalEnv('JWT_ACCESS_EXPIRES_IN', '1d'),
+    refreshSecret: requiredEnv('JWT_REFRESH_SECRET'),
+    refreshExpiresIn: optionalEnv('JWT_REFRESH_EXPIRES_IN', '30d'),
+  },
 };

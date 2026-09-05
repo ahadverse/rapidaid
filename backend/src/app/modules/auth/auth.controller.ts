@@ -1,7 +1,20 @@
 import { Request, Response } from 'express';
+import { config } from '../../../config';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
+import { REFRESH_COOKIE_MAX_AGE_MS, REFRESH_COOKIE_NAME } from './auth.constant';
 import { AuthService } from './auth.service';
+
+// sameSite none is required once the API and the client sit on different domains,
+// and browsers only accept it together with secure.
+const setRefreshCookie = (res: Response, token: string): void => {
+  res.cookie(REFRESH_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: config.isProduction,
+    sameSite: config.isProduction ? 'none' : 'lax',
+    maxAge: REFRESH_COOKIE_MAX_AGE_MS,
+  });
+};
 
 const register = catchAsync(async (req: Request, res: Response) => {
   const result = await AuthService.register(req.body);
@@ -13,4 +26,28 @@ const register = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const AuthController = { register };
+const login = catchAsync(async (req: Request, res: Response) => {
+  const { refreshToken, ...result } = await AuthService.login(req.body);
+
+  setRefreshCookie(res, refreshToken);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: 'Login successful',
+    data: result,
+  });
+});
+
+const refreshToken = catchAsync(async (req: Request, res: Response) => {
+  const tokens = await AuthService.refreshToken(req.cookies?.[REFRESH_COOKIE_NAME]);
+
+  setRefreshCookie(res, tokens.refreshToken);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: 'Access token refreshed',
+    data: { accessToken: tokens.accessToken },
+  });
+});
+
+export const AuthController = { register, login, refreshToken };

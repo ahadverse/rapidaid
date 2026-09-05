@@ -7,6 +7,16 @@ export type TRegisterPayload = {
   phone: string;
 };
 
+export type TLoginPayload = {
+  email: string;
+  password: string;
+};
+
+export type TAuthTokens = {
+  accessToken: string;
+  refreshToken: string;
+};
+
 export type TPublicUser = {
   id: string;
   name: string;

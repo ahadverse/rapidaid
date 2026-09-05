@@ -12,7 +12,6 @@ out/
 # environment
 .env
 .env.*
-!.env.example
 
 # logs
 logs/
