@@ -5,7 +5,12 @@ import AppError from '../../errors/AppError';
 import prisma from '../../lib/prisma';
 import { createToken, verifyToken } from '../../utils/jwt';
 import { publicUserSelect } from './auth.constant';
-import { TAuthTokens, TLoginPayload, TRegisterPayload } from './auth.interface';
+import {
+  TAuthTokens,
+  TChangePasswordPayload,
+  TLoginPayload,
+  TRegisterPayload,
+} from './auth.interface';
 
 const register = async (payload: TRegisterPayload) => {
   const existing = await prisma.user.findUnique({
@@ -98,4 +103,29 @@ const refreshToken = async (token: string | undefined) => {
   return issueTokens(user);
 };
 
-export const AuthService = { register, login, refreshToken };
+const changePassword = async (userId: string, payload: TChangePasswordPayload) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { password: true },
+  });
+
+  if (!user?.password) {
+    throw new AppError(400, 'Password login is not enabled for this account');
+  }
+
+  const passwordMatched = await bcrypt.compare(payload.oldPassword, user.password);
+
+  if (!passwordMatched) {
+    throw new AppError(401, 'Old password is incorrect');
+  }
+
+  if (payload.oldPassword === payload.newPassword) {
+    throw new AppError(400, 'New password must be different from the old password');
+  }
+
+  const password = await bcrypt.hash(payload.newPassword, config.bcryptSaltRounds);
+
+  await prisma.user.update({ where: { id: userId }, data: { password } });
+};
+
+export const AuthService = { register, login, refreshToken, changePassword };

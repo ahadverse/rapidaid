@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { config } from '../../../config';
+import authUser from '../../utils/authUser';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
 import { REFRESH_COOKIE_MAX_AGE_MS, REFRESH_COOKIE_NAME } from './auth.constant';
@@ -50,4 +51,28 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const AuthController = { register, login, refreshToken };
+const changePassword = catchAsync(async (req: Request, res: Response) => {
+  await AuthService.changePassword(authUser(req).userId, req.body);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: 'Password changed successfully',
+    data: null,
+  });
+});
+
+const logout = catchAsync(async (_req: Request, res: Response) => {
+  res.clearCookie(REFRESH_COOKIE_NAME, {
+    httpOnly: true,
+    secure: config.isProduction,
+    sameSite: config.isProduction ? 'none' : 'lax',
+  });
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: 'Logged out successfully',
+    data: null,
+  });
+});
+
+export const AuthController = { register, login, refreshToken, changePassword, logout };

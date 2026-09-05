@@ -19,4 +19,13 @@ const login = z.object({
   }),
 });
 
-export const AuthValidation = { register, login };
+const changePassword = z.object({
+  body: z.object({
+    oldPassword: z.string().min(1, 'Old password is required'),
+    newPassword: z
+      .string()
+      .min(PASSWORD_MIN_LENGTH, `Password must be at least ${PASSWORD_MIN_LENGTH} characters`),
+  }),
+});
+
+export const AuthValidation = { register, login, changePassword };
