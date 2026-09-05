@@ -33,4 +33,10 @@ export const config = {
     refreshSecret: requiredEnv('JWT_REFRESH_SECRET'),
     refreshExpiresIn: optionalEnv('JWT_REFRESH_EXPIRES_IN', '30d'),
   },
+  // Optional so the API still boots without GCP credentials; the routes report 503 instead.
+  google: {
+    clientId: optionalEnv('GOOGLE_CLIENT_ID', ''),
+    clientSecret: optionalEnv('GOOGLE_CLIENT_SECRET', ''),
+    callbackUrl: optionalEnv('GOOGLE_CALLBACK_URL', ''),
+  },
 };

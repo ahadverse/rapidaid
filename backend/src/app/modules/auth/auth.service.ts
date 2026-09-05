@@ -2,13 +2,15 @@ import { Role, User, UserStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { config } from '../../../config';
 import AppError from '../../errors/AppError';
+import { getGoogleClient } from '../../lib/googleClient';
 import prisma from '../../lib/prisma';
 import { createToken, verifyToken } from '../../utils/jwt';
-import { publicUserSelect } from './auth.constant';
+import { GOOGLE_SCOPES, publicUserSelect } from './auth.constant';
 import {
   TAuthTokens,
   TChangePasswordPayload,
   TLoginPayload,
+  TPublicUser,
   TRegisterPayload,
 } from './auth.interface';
 
@@ -37,6 +39,16 @@ const register = async (payload: TRegisterPayload) => {
   });
 };
 
+const toPublicUser = (user: User): TPublicUser => ({
+  id: user.id,
+  name: user.name,
+  email: user.email,
+  phone: user.phone,
+  role: user.role,
+  status: user.status,
+  createdAt: user.createdAt,
+});
+
 const issueTokens = (user: Pick<User, 'id' | 'email' | 'role'>): TAuthTokens => {
   const payload = { userId: user.id, email: user.email, role: user.role };
 
@@ -64,20 +76,7 @@ const login = async (payload: TLoginPayload) => {
     throw new AppError(403, 'Your account has been blocked');
   }
 
-  const tokens = issueTokens(user);
-
-  return {
-    ...tokens,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      status: user.status,
-      createdAt: user.createdAt,
-    },
-  };
+  return { ...issueTokens(user), user: toPublicUser(user) };
 };
 
 const refreshToken = async (token: string | undefined) => {
@@ -128,4 +127,81 @@ const changePassword = async (userId: string, payload: TChangePasswordPayload) =
   await prisma.user.update({ where: { id: userId }, data: { password } });
 };
 
-export const AuthService = { register, login, refreshToken, changePassword };
+const buildGoogleAuthUrl = (state: string): string =>
+  getGoogleClient().generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent',
+    scope: GOOGLE_SCOPES,
+    state,
+  });
+
+const googleCallback = async (code: string) => {
+  const client = getGoogleClient();
+
+  // Gaxios throws its own error shape on a bad or replayed code; keep it off the 500 path.
+  const exchanged = await client.getToken(code).catch(() => {
+    throw new AppError(401, 'Google rejected the authorization code');
+  });
+
+  if (!exchanged.tokens.id_token) {
+    throw new AppError(401, 'Google did not return an identity token');
+  }
+
+  const ticket = await client.verifyIdToken({
+    idToken: exchanged.tokens.id_token,
+    audience: config.google.clientId,
+  });
+
+  const profile = ticket.getPayload();
+
+  if (!profile?.email || !profile.sub) {
+    throw new AppError(401, 'Google account did not provide an email address');
+  }
+
+  if (!profile.email_verified) {
+    throw new AppError(403, 'Your Google email address is not verified');
+  }
+
+  const email = profile.email.toLowerCase();
+  const existing = await prisma.user.findUnique({ where: { email } });
+
+  if (existing) {
+    if (existing.isDeleted) {
+      throw new AppError(401, 'This account no longer exists');
+    }
+
+    if (existing.status === UserStatus.BLOCKED) {
+      throw new AppError(403, 'Your account has been blocked');
+    }
+
+    // Link the Google identity to the existing email rather than creating a second account.
+    const user = existing.googleId
+      ? existing
+      : await prisma.user.update({
+          where: { id: existing.id },
+          data: { googleId: profile.sub },
+        });
+
+    return { ...issueTokens(user), user: toPublicUser(user) };
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      name: profile.name ?? email.split('@')[0],
+      email,
+      googleId: profile.sub,
+      role: Role.PATIENT,
+    },
+  });
+
+  return { ...issueTokens(user), user: toPublicUser(user) };
+};
+
+export const AuthService = {
+  register,
+  login,
+  refreshToken,
+  changePassword,
+  buildGoogleAuthUrl,
+  googleCallback,
+};

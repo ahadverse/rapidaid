@@ -8,6 +8,8 @@ const router = Router();
 
 router.post('/register', validateRequest(AuthValidation.register), AuthController.register);
 router.post('/login', validateRequest(AuthValidation.login), AuthController.login);
+router.get('/google', AuthController.googleLogin);
+router.get('/google/callback', AuthController.googleCallback);
 router.post('/refresh-token', AuthController.refreshToken);
 router.post(
   '/change-password',

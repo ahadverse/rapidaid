@@ -1,9 +1,16 @@
+import { randomBytes } from 'crypto';
 import { Request, Response } from 'express';
 import { config } from '../../../config';
+import AppError from '../../errors/AppError';
 import authUser from '../../utils/authUser';
 import catchAsync from '../../utils/catchAsync';
 import sendResponse from '../../utils/sendResponse';
-import { REFRESH_COOKIE_MAX_AGE_MS, REFRESH_COOKIE_NAME } from './auth.constant';
+import {
+  OAUTH_STATE_COOKIE_NAME,
+  OAUTH_STATE_MAX_AGE_MS,
+  REFRESH_COOKIE_MAX_AGE_MS,
+  REFRESH_COOKIE_NAME,
+} from './auth.constant';
 import { AuthService } from './auth.service';
 
 // sameSite none is required once the API and the client sit on different domains,
@@ -75,4 +82,60 @@ const logout = catchAsync(async (_req: Request, res: Response) => {
   });
 });
 
-export const AuthController = { register, login, refreshToken, changePassword, logout };
+const googleLogin = catchAsync(async (_req: Request, res: Response) => {
+  // Random state, echoed back by Google and compared against this cookie, blocks CSRF on the callback.
+  const state = randomBytes(16).toString('hex');
+
+  res.cookie(OAUTH_STATE_COOKIE_NAME, state, {
+    httpOnly: true,
+    secure: config.isProduction,
+    sameSite: 'lax',
+    maxAge: OAUTH_STATE_MAX_AGE_MS,
+  });
+
+  res.redirect(AuthService.buildGoogleAuthUrl(state));
+});
+
+const googleCallback = catchAsync(async (req: Request, res: Response) => {
+  const { code, state, error } = req.query;
+
+  if (error) {
+    throw new AppError(401, 'Google sign-in was cancelled');
+  }
+
+  const expectedState = req.cookies?.[OAUTH_STATE_COOKIE_NAME];
+
+  if (!state || !expectedState || state !== expectedState) {
+    throw new AppError(401, 'Invalid OAuth state');
+  }
+
+  res.clearCookie(OAUTH_STATE_COOKIE_NAME, {
+    httpOnly: true,
+    secure: config.isProduction,
+    sameSite: 'lax',
+  });
+
+  if (typeof code !== 'string') {
+    throw new AppError(400, 'Authorization code is required');
+  }
+
+  const { refreshToken: newRefreshToken, ...result } = await AuthService.googleCallback(code);
+
+  setRefreshCookie(res, newRefreshToken);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: 'Google login successful',
+    data: result,
+  });
+});
+
+export const AuthController = {
+  register,
+  login,
+  refreshToken,
+  changePassword,
+  logout,
+  googleLogin,
+  googleCallback,
+};
