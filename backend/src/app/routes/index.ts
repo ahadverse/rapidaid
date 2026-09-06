@@ -5,6 +5,7 @@ import { AuthRoutes } from '../modules/auth/auth.route';
 import { DriverRoutes } from '../modules/driver/driver.route';
 import { EmergencyRequestRoutes } from '../modules/emergencyRequest/emergencyRequest.route';
 import { HospitalRoutes } from '../modules/hospital/hospital.route';
+import { TripRoutes } from '../modules/trip/trip.route';
 import { UserRoutes } from '../modules/user/user.route';
 import sendResponse from '../utils/sendResponse';
 
@@ -22,6 +23,7 @@ const moduleRoutes: TModuleRoute[] = [
   { path: '/hospitals', route: HospitalRoutes },
   { path: '/drivers', route: DriverRoutes },
   { path: '/emergency-requests', route: EmergencyRequestRoutes },
+  { path: '/trips', route: TripRoutes },
 ];
 
 moduleRoutes.forEach(({ path, route }) => {
