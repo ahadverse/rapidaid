@@ -1,15 +1,26 @@
-import { Prisma, RequestStatus, Role } from '@prisma/client';
+import {
+  AmbulanceStatus,
+  AmbulanceType,
+  Prisma,
+  RequestStatus,
+  Role,
+  TripStatus,
+  UserStatus,
+} from '@prisma/client';
 import AppError from '../../errors/AppError';
 import prisma from '../../lib/prisma';
 import { buildMeta, calculatePagination, TPaginationOptions } from '../../utils/paginationHelper';
 import { TJwtPayload } from '../../utils/jwt';
+import { ACTIVE_TRIP_STATUSES, tripDetailSelect } from '../trip/trip.constant';
 import {
+  DISPATCHABLE_REQUEST_STATUSES,
   emergencyRequestSelect,
   emergencyRequestSortableFields,
   OPEN_REQUEST_STATUSES,
 } from './emergencyRequest.constant';
 import {
   TCreateEmergencyRequestPayload,
+  TDispatchPayload,
   TEmergencyRequestFilters,
   TUpdateEmergencyRequestPayload,
 } from './emergencyRequest.interface';
@@ -140,4 +151,166 @@ const cancel = async (user: TJwtPayload, id: string, cancelReason: string) => {
   });
 };
 
-export const EmergencyRequestService = { create, getAll, getById, update, cancel };
+type TCrew = {
+  driverId: string;
+  ambulanceId: string;
+  ambulanceType: AmbulanceType;
+};
+
+// A driver is only dispatchable with an active account, an assigned ambulance that
+// is free, and no other trip still running.
+const findCrewCandidates = async (override: TDispatchPayload): Promise<TCrew[]> => {
+  const candidates = await prisma.driverProfile.findMany({
+    where: {
+      isAvailable: true,
+      user: { isDeleted: false, status: UserStatus.ACTIVE },
+      ambulance: {
+        status: AmbulanceStatus.AVAILABLE,
+        isDeleted: false,
+        trips: { none: { status: { in: ACTIVE_TRIP_STATUSES } } },
+      },
+      trips: { none: { status: { in: ACTIVE_TRIP_STATUSES } } },
+      ...(override.driverId ? { id: override.driverId } : {}),
+      ...(override.ambulanceId ? { ambulanceId: override.ambulanceId } : {}),
+    },
+    select: { id: true, ambulance: { select: { id: true, type: true } } },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  return candidates.flatMap((candidate) =>
+    candidate.ambulance
+      ? [
+          {
+            driverId: candidate.id,
+            ambulanceId: candidate.ambulance.id,
+            ambulanceType: candidate.ambulance.type,
+          },
+        ]
+      : [],
+  );
+};
+
+// The requested type is a preference, not a requirement — refusing to send the
+// only free ambulance because it is the wrong trim would be worse for the patient.
+const pickCrew = (candidates: TCrew[], requestedType: AmbulanceType | null) =>
+  (requestedType && candidates.find((crew) => crew.ambulanceType === requestedType)) ??
+  candidates[0] ??
+  null;
+
+const dispatch = async (adminId: string, id: string, payload: TDispatchPayload) => {
+  const request = await prisma.emergencyRequest.findUnique({
+    where: { id },
+    select: { id: true, status: true, requestedAmbulanceType: true },
+  });
+
+  if (!request) {
+    throw new AppError(404, 'Emergency request not found');
+  }
+
+  if (!DISPATCHABLE_REQUEST_STATUSES.includes(request.status)) {
+    throw new AppError(409, `A ${request.status} emergency request cannot be dispatched`);
+  }
+
+  // Separating "your override does not exist" from "nothing is free" keeps a typo
+  // in an id from looking like an empty fleet.
+  if (payload.ambulanceId) {
+    const ambulance = await prisma.ambulance.findFirst({
+      where: { id: payload.ambulanceId, isDeleted: false },
+      select: { id: true },
+    });
+
+    if (!ambulance) {
+      throw new AppError(404, 'Ambulance not found');
+    }
+  }
+
+  if (payload.driverId) {
+    const driver = await prisma.driverProfile.findUnique({
+      where: { id: payload.driverId },
+      select: { id: true },
+    });
+
+    if (!driver) {
+      throw new AppError(404, 'Driver not found');
+    }
+  }
+
+  const crew = pickCrew(await findCrewCandidates(payload), request.requestedAmbulanceType);
+
+  if (!crew) {
+    // Park it rather than fail outright, so a retry works once the fleet frees up.
+    if (request.status !== RequestStatus.NO_AMBULANCE_AVAILABLE) {
+      await prisma.emergencyRequest.update({
+        where: { id },
+        data: { status: RequestStatus.NO_AMBULANCE_AVAILABLE },
+      });
+    }
+
+    throw new AppError(409, 'No ambulance with an available driver could be assigned right now');
+  }
+
+  return prisma.$transaction(async (tx) => {
+    // Every claim below is a conditional update guarded by the state it expects.
+    // A concurrent dispatcher that got here first has already changed that state,
+    // so its update matches zero rows and this whole transaction rolls back
+    // instead of double-booking the ambulance.
+    const claimedRequest = await tx.emergencyRequest.updateMany({
+      where: { id, status: { in: DISPATCHABLE_REQUEST_STATUSES } },
+      data: { status: RequestStatus.DISPATCHED },
+    });
+
+    if (claimedRequest.count === 0) {
+      throw new AppError(409, 'This emergency request was just dispatched by someone else');
+    }
+
+    const claimedAmbulance = await tx.ambulance.updateMany({
+      where: { id: crew.ambulanceId, status: AmbulanceStatus.AVAILABLE, isDeleted: false },
+      data: { status: AmbulanceStatus.ON_TRIP },
+    });
+
+    if (claimedAmbulance.count === 0) {
+      throw new AppError(409, 'That ambulance was just assigned to another emergency');
+    }
+
+    const claimedDriver = await tx.driverProfile.updateMany({
+      where: { id: crew.driverId, isAvailable: true },
+      data: { isAvailable: false },
+    });
+
+    if (claimedDriver.count === 0) {
+      throw new AppError(409, 'That driver was just assigned to another emergency');
+    }
+
+    // Trip.requestId is unique, so even a race that slipped past the guards above
+    // cannot produce two trips for one emergency.
+    const trip = await tx.trip.create({
+      data: {
+        requestId: id,
+        ambulanceId: crew.ambulanceId,
+        driverId: crew.driverId,
+        status: TripStatus.DISPATCHED,
+      },
+      select: tripDetailSelect,
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actorId: adminId,
+        action: 'DISPATCH',
+        entity: 'EmergencyRequest',
+        entityId: id,
+        before: { status: request.status },
+        after: {
+          status: RequestStatus.DISPATCHED,
+          tripId: trip.id,
+          ambulanceId: crew.ambulanceId,
+          driverId: crew.driverId,
+        },
+      },
+    });
+
+    return trip;
+  });
+};
+
+export const EmergencyRequestService = { create, getAll, getById, update, cancel, dispatch };

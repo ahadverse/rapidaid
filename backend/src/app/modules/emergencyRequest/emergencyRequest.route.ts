@@ -38,5 +38,11 @@ router.patch(
   validateRequest(EmergencyRequestValidation.cancel),
   EmergencyRequestController.cancel,
 );
+router.post(
+  '/:id/dispatch',
+  auth(Role.ADMIN),
+  validateRequest(EmergencyRequestValidation.dispatch),
+  EmergencyRequestController.dispatch,
+);
 
 export const EmergencyRequestRoutes = router;

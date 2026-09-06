@@ -76,6 +76,17 @@ const cancel = z.object({
   }),
 });
 
+const dispatch = z.object({
+  params: z.object({ id: z.uuid('A valid emergency request id is required') }),
+  body: z
+    .object({
+      ambulanceId: z.uuid('A valid ambulance id is required').optional(),
+      driverId: z.uuid('A valid driver id is required').optional(),
+    })
+    .optional()
+    .default({}),
+});
+
 const idParam = z.object({
   params: z.object({ id: z.uuid('A valid emergency request id is required') }),
 });
@@ -92,4 +103,4 @@ const list = z.object({
   }),
 });
 
-export const EmergencyRequestValidation = { create, update, cancel, idParam, list };
+export const EmergencyRequestValidation = { create, update, cancel, dispatch, idParam, list };

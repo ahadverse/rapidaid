@@ -66,4 +66,18 @@ const cancel = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const EmergencyRequestController = { create, getAll, getById, update, cancel };
+const dispatch = catchAsync(async (req: Request, res: Response) => {
+  const result = await EmergencyRequestService.dispatch(
+    authUser(req).userId,
+    req.params.id,
+    req.body,
+  );
+
+  sendResponse(res, {
+    statusCode: 201,
+    message: 'Ambulance dispatched successfully',
+    data: result,
+  });
+});
+
+export const EmergencyRequestController = { create, getAll, getById, update, cancel, dispatch };

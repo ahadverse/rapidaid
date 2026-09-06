@@ -8,6 +8,14 @@ export const emergencyRequestFilterableFields = ['searchTerm', 'status', 'priori
 export const OPEN_REQUEST_STATUSES: RequestStatus[] = [
   RequestStatus.PENDING,
   RequestStatus.DISPATCHED,
+  RequestStatus.NO_AMBULANCE_AVAILABLE,
+];
+
+// NO_AMBULANCE_AVAILABLE is a parking state, not a terminal one: the fleet frees
+// up constantly, so a request that found nothing stays retryable.
+export const DISPATCHABLE_REQUEST_STATUSES: RequestStatus[] = [
+  RequestStatus.PENDING,
+  RequestStatus.NO_AMBULANCE_AVAILABLE,
 ];
 
 export const emergencyRequestSelect = {

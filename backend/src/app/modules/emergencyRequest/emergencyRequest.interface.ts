@@ -16,3 +16,9 @@ export type TCreateEmergencyRequestPayload = {
 };
 
 export type TUpdateEmergencyRequestPayload = Partial<TCreateEmergencyRequestPayload>;
+
+// Both are optional overrides — left out, the dispatcher picks the crew itself.
+export type TDispatchPayload = {
+  ambulanceId?: string;
+  driverId?: string;
+};
