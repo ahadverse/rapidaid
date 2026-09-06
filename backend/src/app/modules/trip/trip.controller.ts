@@ -69,4 +69,21 @@ const selectHospital = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const TripController = { getAll, getMyTrips, getById, updateStatus, selectHospital };
+const complete = catchAsync(async (req: Request, res: Response) => {
+  const result = await TripService.complete(authUser(req), req.params.id, req.body);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: 'Trip completed successfully',
+    data: result,
+  });
+});
+
+export const TripController = {
+  getAll,
+  getMyTrips,
+  getById,
+  updateStatus,
+  selectHospital,
+  complete,
+};

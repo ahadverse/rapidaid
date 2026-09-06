@@ -15,3 +15,7 @@ export type TUpdateTripStatusPayload = {
 export type TSelectHospitalPayload = {
   hospitalId: string;
 };
+
+export type TCompleteTripPayload = {
+  distanceKm: number;
+};

@@ -1,16 +1,26 @@
-import { AmbulanceStatus, Prisma, RequestStatus, Role, TripStatus } from '@prisma/client';
+import {
+  AmbulanceStatus,
+  PaymentStatus,
+  Prisma,
+  RequestStatus,
+  Role,
+  TripStatus,
+} from '@prisma/client';
 import AppError from '../../errors/AppError';
 import prisma from '../../lib/prisma';
 import { TJwtPayload } from '../../utils/jwt';
 import { buildMeta, calculatePagination, TPaginationOptions } from '../../utils/paginationHelper';
+import generateTransactionId from '../../utils/transactionId';
 import {
+  COMPLETABLE_TRIP_STATUSES,
   HOSPITAL_SELECTABLE_STATUSES,
   STATUS_ENDPOINT_BLOCKED,
   tripDetailSelect,
+  tripPaymentSelect,
   tripSortableFields,
   TRIP_STATUS_TRANSITIONS,
 } from './trip.constant';
-import { TTripFilters, TUpdateTripStatusPayload } from './trip.interface';
+import { TCompleteTripPayload, TTripFilters, TUpdateTripStatusPayload } from './trip.interface';
 
 const loadTripOrFail = async (id: string) => {
   const trip = await prisma.trip.findUnique({
@@ -226,4 +236,108 @@ const selectHospital = async (user: TJwtPayload, id: string, hospitalId: string)
   });
 };
 
-export const TripService = { getAll, getMyTrips, getById, updateStatus, selectHospital };
+// Money is kept in Decimal end to end — a float would drift a few poisha on every
+// fare and never reconcile against what the gateway charged.
+const calculateFare = (
+  baseFare: Prisma.Decimal,
+  perKmRate: Prisma.Decimal,
+  distanceKm: Prisma.Decimal,
+) => baseFare.plus(perKmRate.times(distanceKm)).toDecimalPlaces(2);
+
+const complete = async (user: TJwtPayload, id: string, payload: TCompleteTripPayload) => {
+  const trip = await loadTripOrFail(id);
+  assertCanDrive(user, trip);
+
+  if (!COMPLETABLE_TRIP_STATUSES.includes(trip.status)) {
+    throw new AppError(
+      409,
+      trip.status === TripStatus.COMPLETED
+        ? 'This trip has already been completed'
+        : `A ${trip.status} trip cannot be completed — the ambulance must reach the hospital first`,
+    );
+  }
+
+  // Rates are read off the ambulance that actually ran the trip, so re-pricing the
+  // fleet later never rewrites a fare that has already been billed.
+  const ambulance = await prisma.ambulance.findUniqueOrThrow({
+    where: { id: trip.ambulanceId },
+    select: { baseFare: true, perKmRate: true },
+  });
+
+  // The column stores 2 decimals, so round here too — otherwise the stored distance
+  // and the distance the fare was built from would disagree.
+  const distanceKm = new Prisma.Decimal(payload.distanceKm).toDecimalPlaces(2);
+  const fare = calculateFare(ambulance.baseFare, ambulance.perKmRate, distanceKm);
+
+  return prisma.$transaction(async (tx) => {
+    // Guarded on the status we read: a second driver tapping complete finds zero
+    // rows and rolls back rather than raising a second bill for the same trip.
+    const completed = await tx.trip.updateMany({
+      where: { id, status: trip.status },
+      data: { status: TripStatus.COMPLETED, distanceKm, fare, completedAt: new Date() },
+    });
+
+    if (completed.count === 0) {
+      throw new AppError(409, 'This trip was just updated by someone else');
+    }
+
+    // The crew and the vehicle go back into the dispatch pool together; leaving
+    // either one claimed shrinks the fleet for every request that follows.
+    await tx.ambulance.update({
+      where: { id: trip.ambulanceId },
+      data: { status: AmbulanceStatus.AVAILABLE },
+    });
+
+    await tx.driverProfile.update({
+      where: { id: trip.driverId },
+      data: { isAvailable: true },
+    });
+
+    await tx.emergencyRequest.update({
+      where: { id: trip.requestId },
+      data: { status: RequestStatus.COMPLETED },
+    });
+
+    // The bill is raised now rather than at checkout, so an unpaid trip is a row
+    // an admin can chase instead of an intention nobody recorded.
+    const payment = await tx.payment.create({
+      data: {
+        tripId: trip.id,
+        patientId: trip.request.patientId,
+        amount: fare,
+        transactionId: generateTransactionId(),
+        status: PaymentStatus.PENDING,
+      },
+      select: tripPaymentSelect,
+    });
+
+    await tx.auditLog.create({
+      data: {
+        actorId: user.userId,
+        action: 'COMPLETE_TRIP',
+        entity: 'Trip',
+        entityId: trip.id,
+        before: { status: trip.status },
+        after: {
+          status: TripStatus.COMPLETED,
+          distanceKm: distanceKm.toFixed(2),
+          fare: fare.toFixed(2),
+          paymentId: payment.id,
+        },
+      },
+    });
+
+    const settled = await tx.trip.findUniqueOrThrow({ where: { id }, select: tripDetailSelect });
+
+    return { ...settled, payment };
+  });
+};
+
+export const TripService = {
+  getAll,
+  getMyTrips,
+  getById,
+  updateStatus,
+  selectHospital,
+  complete,
+};

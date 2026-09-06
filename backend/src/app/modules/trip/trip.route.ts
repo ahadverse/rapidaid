@@ -29,6 +29,12 @@ router.patch(
   TripController.updateStatus,
 );
 router.patch(
+  '/:id/complete',
+  auth(Role.DRIVER, Role.ADMIN),
+  validateRequest(TripValidation.complete),
+  TripController.complete,
+);
+router.patch(
   '/:id/hospital',
   auth(Role.DRIVER, Role.ADMIN),
   validateRequest(TripValidation.selectHospital),

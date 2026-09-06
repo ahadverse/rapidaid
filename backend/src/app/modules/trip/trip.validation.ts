@@ -1,5 +1,6 @@
 import { TripStatus } from '@prisma/client';
 import { z } from 'zod';
+import { MAX_TRIP_DISTANCE_KM } from './trip.constant';
 
 const updateStatus = z.object({
   params: z.object({ id: z.uuid('A valid trip id is required') }),
@@ -27,6 +28,18 @@ const selectHospital = z.object({
   }),
 });
 
+const complete = z.object({
+  params: z.object({ id: z.uuid('A valid trip id is required') }),
+  body: z.object({
+    // The fare is computed from this, so it is the one number the driver must get
+    // right — a zero or a negative would hand the patient a free or refunded trip.
+    distanceKm: z
+      .number('Distance travelled in kilometres is required')
+      .positive('Distance must be greater than zero')
+      .max(MAX_TRIP_DISTANCE_KM, `Distance cannot exceed ${MAX_TRIP_DISTANCE_KM} km`),
+  }),
+});
+
 // Accepts a plain date or a full timestamp, so ?from=2026-09-01 works as expected.
 const dateBound = (label: string) =>
   z
@@ -51,4 +64,4 @@ const list = z.object({
   }),
 });
 
-export const TripValidation = { updateStatus, selectHospital, idParam, list };
+export const TripValidation = { updateStatus, selectHospital, complete, idParam, list };
