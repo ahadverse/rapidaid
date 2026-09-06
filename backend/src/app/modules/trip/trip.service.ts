@@ -236,8 +236,8 @@ const selectHospital = async (user: TJwtPayload, id: string, hospitalId: string)
   });
 };
 
-// Money is kept in Decimal end to end — a float would drift a few poisha on every
-// fare and never reconcile against what the gateway charged.
+// Decimal end to end — a float drifts a few poisha per fare and never reconciles
+// against what the gateway charged.
 const calculateFare = (
   baseFare: Prisma.Decimal,
   perKmRate: Prisma.Decimal,
@@ -257,21 +257,19 @@ const complete = async (user: TJwtPayload, id: string, payload: TCompleteTripPay
     );
   }
 
-  // Rates are read off the ambulance that actually ran the trip, so re-pricing the
-  // fleet later never rewrites a fare that has already been billed.
   const ambulance = await prisma.ambulance.findUniqueOrThrow({
     where: { id: trip.ambulanceId },
     select: { baseFare: true, perKmRate: true },
   });
 
-  // The column stores 2 decimals, so round here too — otherwise the stored distance
-  // and the distance the fare was built from would disagree.
+  // Rounded to the 2 decimals the column stores, so the saved distance and the
+  // distance the fare was built from cannot disagree.
   const distanceKm = new Prisma.Decimal(payload.distanceKm).toDecimalPlaces(2);
   const fare = calculateFare(ambulance.baseFare, ambulance.perKmRate, distanceKm);
 
   return prisma.$transaction(async (tx) => {
-    // Guarded on the status we read: a second driver tapping complete finds zero
-    // rows and rolls back rather than raising a second bill for the same trip.
+    // Guarded on the status just read: a second tap finds zero rows and rolls back
+    // rather than raising a second bill for the same trip.
     const completed = await tx.trip.updateMany({
       where: { id, status: trip.status },
       data: { status: TripStatus.COMPLETED, distanceKm, fare, completedAt: new Date() },
@@ -281,8 +279,6 @@ const complete = async (user: TJwtPayload, id: string, payload: TCompleteTripPay
       throw new AppError(409, 'This trip was just updated by someone else');
     }
 
-    // The crew and the vehicle go back into the dispatch pool together; leaving
-    // either one claimed shrinks the fleet for every request that follows.
     await tx.ambulance.update({
       where: { id: trip.ambulanceId },
       data: { status: AmbulanceStatus.AVAILABLE },
@@ -298,8 +294,8 @@ const complete = async (user: TJwtPayload, id: string, payload: TCompleteTripPay
       data: { status: RequestStatus.COMPLETED },
     });
 
-    // The bill is raised now rather than at checkout, so an unpaid trip is a row
-    // an admin can chase instead of an intention nobody recorded.
+    // Raised now rather than at checkout, so an unpaid trip is a row an admin can
+    // chase instead of an intention nobody recorded.
     const payment = await tx.payment.create({
       data: {
         tripId: trip.id,

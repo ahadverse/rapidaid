@@ -28,8 +28,6 @@ export const STATUS_ENDPOINT_BLOCKED: TripStatus[] = [TripStatus.COMPLETED];
 // A trip is only billable once the ambulance has actually delivered the patient.
 export const COMPLETABLE_TRIP_STATUSES: TripStatus[] = [TripStatus.ARRIVED_AT_HOSPITAL];
 
-// No single ambulance run in the country is longer than this — a bigger number is
-// a typo, and distanceKm is what the fare is built on.
 export const MAX_TRIP_DISTANCE_KM = 500;
 
 // A destination can be chosen or changed right up until the ambulance arrives.
@@ -76,8 +74,6 @@ export const tripDetailSelect = {
   },
 } as const;
 
-// The bill handed back the moment a trip is completed, so the patient knows what
-// to pay before the payment module is ever called.
 export const tripPaymentSelect = {
   id: true,
   amount: true,

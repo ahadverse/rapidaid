@@ -39,4 +39,22 @@ export const config = {
     clientSecret: optionalEnv('GOOGLE_CLIENT_SECRET', ''),
     callbackUrl: optionalEnv('GOOGLE_CALLBACK_URL', ''),
   },
+  // Store keys optional at boot like Google's; the payment routes answer 503 while
+  // they are missing. Hosts default to the sandbox, never live.
+  ssl: {
+    storeId: optionalEnv('SSL_STORE_ID', ''),
+    storePass: optionalEnv('SSL_STORE_PASS', ''),
+    paymentApi: optionalEnv(
+      'SSL_PAYMENT_API',
+      'https://sandbox.sslcommerz.com/gwprocess/v4/api.php',
+    ),
+    validationApi: optionalEnv(
+      'SSL_VALIDATION_API',
+      'https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php',
+    ),
+    successUrl: optionalEnv('SSL_SUCCESS_URL', ''),
+    failUrl: optionalEnv('SSL_FAIL_URL', ''),
+    cancelUrl: optionalEnv('SSL_CANCEL_URL', ''),
+    ipnUrl: optionalEnv('SSL_IPN_URL', ''),
+  },
 };

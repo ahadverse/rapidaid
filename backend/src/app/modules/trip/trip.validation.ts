@@ -31,8 +31,6 @@ const selectHospital = z.object({
 const complete = z.object({
   params: z.object({ id: z.uuid('A valid trip id is required') }),
   body: z.object({
-    // The fare is computed from this, so it is the one number the driver must get
-    // right — a zero or a negative would hand the patient a free or refunded trip.
     distanceKm: z
       .number('Distance travelled in kilometres is required')
       .positive('Distance must be greater than zero')
