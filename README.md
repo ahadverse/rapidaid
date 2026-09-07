@@ -242,6 +242,52 @@ Base URL: `/api/v1`. All responses use one envelope.
 
 ---
 
+## ▶️ Try the Full Flow
+
+Twelve calls take you from an emergency call to a payable bill. Nothing else is needed — the seed
+already provides ambulances, hospitals and drivers on duty.
+
+| # | Method | Endpoint | Role | Save from response |
+|---|---|---|---|---|
+| 1 | POST | `/auth/login` | — | `adminToken` |
+| 2 | POST | `/auth/login` | — | `patientToken` |
+| 3 | POST | `/auth/login` | — | `driverToken` (`driver3@rapidaid.com`) |
+| 4 | GET | `/hospitals` | any | `hospitalId` |
+| 5 | POST | `/emergency-requests` | patient | `requestId` |
+| 6 | POST | `/emergency-requests/{requestId}/dispatch` | admin | `tripId` |
+| 7 | PATCH | `/trips/{tripId}/status` → `EN_ROUTE_TO_PICKUP` | driver | |
+| 8 | PATCH | `/trips/{tripId}/status` → `PATIENT_PICKED_UP` | driver | |
+| 9 | PATCH | `/trips/{tripId}/hospital` → `{ hospitalId }` | driver | |
+| 10 | PATCH | `/trips/{tripId}/status` → `EN_ROUTE_TO_HOSPITAL` | driver | |
+| 11 | PATCH | `/trips/{tripId}/status` → `ARRIVED_AT_HOSPITAL` | driver | |
+| 12 | PATCH | `/trips/{tripId}/complete` → `{ "distanceKm": 12.5 }` | driver | `fare`, `paymentId` |
+
+Then `POST /payments/init/{tripId}` returns a live SSLCommerz `gatewayPageURL`.
+
+```json
+// 5. the emergency
+{
+  "pickupAddress": "House 42, Road 11, Banani, Dhaka",
+  "patientCondition": "Severe chest pain, conscious but breathing with difficulty",
+  "priority": "CRITICAL",
+  "requestedAmbulanceType": "ICU"
+}
+```
+
+Notes on the sequence:
+
+- There is **no `POST /trips`**. The trip is created inside the dispatch transaction at step 6,
+  together with the ambulance and driver assignment, the audit log and the notifications.
+- Steps 7 to 11 cannot be skipped or reordered — the trip state machine allows one hop at a time.
+- Step 9 must come before step 10, otherwise the API answers
+  `Select a destination hospital before heading there`.
+- Requesting `ICU` at step 5 makes the assignment deterministic: the seeded ICU ambulance
+  `DHA-AMB-1003` belongs to `driver3@rapidaid.com`.
+- The fare at step 12 is computed server side. For the ICU ambulance at 12.5 km it is
+  `2000 + 80 × 12.5 = 3000.00 BDT`.
+
+---
+
 ## 🛡️ Security & Performance
 
 - **Passwords** — bcrypt, 12 rounds, never selected into a response.
@@ -311,23 +357,7 @@ The repo ships a `render.yaml` blueprint.
 
 ---
 
-## 📁 Project Structure
-
-```text
-backend/src
-├── app.ts                  # express wiring: helmet, cors, rate limit, routes, error handler
-├── server.ts               # bootstrap and graceful shutdown
-├── config/                 # env loading and typed config
-└── app/
-    ├── docs/               # OpenAPI spec, Postman collection, Swagger theme
-    ├── errors/             # AppError, Prisma and Zod error mappers
-    ├── lib/                # prisma, redis, google, sslCommerz clients
-    ├── middlewares/        # auth, validateRequest, rateLimiter, notFound, globalErrorHandler
-    ├── modules/            # one folder per domain
-    │   └── <module>/       # route → controller → service, plus validation, constant, interface
-    ├── routes/             # module route table
-    └── utils/              # sendResponse, catchAsync, pagination, jwt, pickQuery
-```
+## 🏗️ Architecture
 
 Every module follows the same path: **route → validation → controller → service → Prisma**. Controllers
 never touch the database; services never touch `req` or `res`.
