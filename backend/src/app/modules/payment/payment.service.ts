@@ -1,4 +1,4 @@
-import { PaymentStatus, Prisma, TripStatus } from '@prisma/client';
+import { NotificationType, PaymentStatus, Prisma, Role, TripStatus } from '@prisma/client';
 import AppError from '../../errors/AppError';
 import prisma from '../../lib/prisma';
 import {
@@ -7,15 +7,18 @@ import {
   validatePayment,
 } from '../../lib/sslCommerz';
 import { TJwtPayload } from '../../utils/jwt';
+import { buildMeta, calculatePagination, TPaginationOptions } from '../../utils/paginationHelper';
 import generateTransactionId from '../../utils/transactionId';
+import { NotificationService } from '../notification/notification.service';
 import {
   DEFAULT_BILLING_CITY,
   PAYMENT_CURRENCY,
   paymentSelect,
+  paymentSortableFields,
   RETRIABLE_PAYMENT_STATUSES,
   VALID_GATEWAY_STATUSES,
 } from './payment.constant';
-import { TCallbackPayload } from './payment.interface';
+import { TCallbackPayload, TPaymentFilters } from './payment.interface';
 
 const loadBillableTrip = async (tripId: string) => {
   const trip = await prisma.trip.findUnique({
@@ -219,6 +222,15 @@ const settle = async (payload: TCallbackPayload) => {
       },
     });
 
+    await NotificationService.notify(tx, [
+      {
+        userId: payment.patientId,
+        title: 'Payment received',
+        message: `We received your payment of BDT ${payment.amount.toFixed(2)}. Thank you.`,
+        type: NotificationType.PAYMENT,
+      },
+    ]);
+
     return { alreadySettled: false };
   });
 
@@ -248,4 +260,53 @@ const fail = (payload: TCallbackPayload) => abandon(payload, PaymentStatus.FAILE
 
 const cancel = (payload: TCallbackPayload) => abandon(payload, PaymentStatus.CANCELLED);
 
-export const PaymentService = { init, success, fail, cancel, ipn };
+const getMine = async (
+  user: TJwtPayload,
+  filters: TPaymentFilters,
+  options: TPaginationOptions,
+) => {
+  const { page, limit, skip, sortBy, sortOrder } = calculatePagination(options);
+  const orderByField = paymentSortableFields.includes(
+    sortBy as (typeof paymentSortableFields)[number],
+  )
+    ? sortBy
+    : 'createdAt';
+
+  const where: Prisma.PaymentWhereInput = {
+    ...(user.role === Role.ADMIN ? {} : { patientId: user.userId }),
+    ...(filters.status ? { status: filters.status } : {}),
+    ...(filters.tripId ? { tripId: filters.tripId } : {}),
+  };
+
+  const [data, total] = await Promise.all([
+    prisma.payment.findMany({
+      where,
+      select: paymentSelect,
+      orderBy: { [orderByField]: sortOrder },
+      skip,
+      take: limit,
+    }),
+    prisma.payment.count({ where }),
+  ]);
+
+  return { data, meta: buildMeta(page, limit, total) };
+};
+
+const getById = async (user: TJwtPayload, id: string) => {
+  const payment = await prisma.payment.findUnique({
+    where: { id },
+    select: { patientId: true },
+  });
+
+  if (!payment) {
+    throw new AppError(404, 'Payment not found');
+  }
+
+  if (user.role !== Role.ADMIN && user.userId !== payment.patientId) {
+    throw new AppError(403, 'You can only view your own payments');
+  }
+
+  return readPayment(id);
+};
+
+export const PaymentService = { init, success, fail, cancel, ipn, getMine, getById };

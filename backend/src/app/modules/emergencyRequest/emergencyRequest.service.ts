@@ -1,6 +1,7 @@
 import {
   AmbulanceStatus,
   AmbulanceType,
+  NotificationType,
   Prisma,
   RequestStatus,
   Role,
@@ -11,6 +12,7 @@ import AppError from '../../errors/AppError';
 import prisma from '../../lib/prisma';
 import { buildMeta, calculatePagination, TPaginationOptions } from '../../utils/paginationHelper';
 import { TJwtPayload } from '../../utils/jwt';
+import { NotificationService } from '../notification/notification.service';
 import { ACTIVE_TRIP_STATUSES, tripDetailSelect } from '../trip/trip.constant';
 import {
   DISPATCHABLE_REQUEST_STATUSES,
@@ -146,6 +148,7 @@ const cancel = async (user: TJwtPayload, id: string, cancelReason: string) => {
 
 type TCrew = {
   driverId: string;
+  driverUserId: string;
   ambulanceId: string;
   ambulanceType: AmbulanceType;
 };
@@ -164,7 +167,7 @@ const findCrewCandidates = async (override: TDispatchPayload): Promise<TCrew[]> 
       ...(override.driverId ? { id: override.driverId } : {}),
       ...(override.ambulanceId ? { ambulanceId: override.ambulanceId } : {}),
     },
-    select: { id: true, ambulance: { select: { id: true, type: true } } },
+    select: { id: true, userId: true, ambulance: { select: { id: true, type: true } } },
     orderBy: { createdAt: 'asc' },
   });
 
@@ -173,6 +176,7 @@ const findCrewCandidates = async (override: TDispatchPayload): Promise<TCrew[]> 
       ? [
           {
             driverId: candidate.id,
+            driverUserId: candidate.userId,
             ambulanceId: candidate.ambulance.id,
             ambulanceType: candidate.ambulance.type,
           },
@@ -189,7 +193,7 @@ const pickCrew = (candidates: TCrew[], requestedType: AmbulanceType | null) =>
 const dispatch = async (adminId: string, id: string, payload: TDispatchPayload) => {
   const request = await prisma.emergencyRequest.findUnique({
     where: { id },
-    select: { id: true, status: true, requestedAmbulanceType: true },
+    select: { id: true, status: true, requestedAmbulanceType: true, patientId: true },
   });
 
   if (!request) {
@@ -288,6 +292,21 @@ const dispatch = async (adminId: string, id: string, payload: TDispatchPayload) 
         },
       },
     });
+
+    await NotificationService.notify(tx, [
+      {
+        userId: request.patientId,
+        title: 'Ambulance dispatched',
+        message: `An ambulance is on the way. Track it on trip ${trip.id}.`,
+        type: NotificationType.DISPATCH,
+      },
+      {
+        userId: crew.driverUserId,
+        title: 'New dispatch assigned',
+        message: `You have been dispatched to ${trip.request.pickupAddress}.`,
+        type: NotificationType.DISPATCH,
+      },
+    ]);
 
     return trip;
   });

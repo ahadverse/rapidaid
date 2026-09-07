@@ -1,7 +1,23 @@
+import { PaymentStatus } from '@prisma/client';
 import { z } from 'zod';
 
 const init = z.object({
   params: z.object({ tripId: z.uuid('A valid trip id is required') }),
+});
+
+const idParam = z.object({
+  params: z.object({ id: z.uuid('A valid payment id is required') }),
+});
+
+const list = z.object({
+  query: z.object({
+    page: z.string().optional(),
+    limit: z.string().optional(),
+    sortBy: z.string().optional(),
+    sortOrder: z.enum(['asc', 'desc']).optional(),
+    status: z.enum(PaymentStatus).optional(),
+    tripId: z.uuid('A valid trip id is required').optional(),
+  }),
 });
 
 const callback = z.object({
@@ -11,4 +27,4 @@ const callback = z.object({
   }),
 });
 
-export const PaymentValidation = { init, callback };
+export const PaymentValidation = { init, callback, idParam, list };

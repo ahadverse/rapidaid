@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
 import authUser from '../../utils/authUser';
 import catchAsync from '../../utils/catchAsync';
+import pickQuery from '../../utils/pickQuery';
 import sendResponse from '../../utils/sendResponse';
+import { paymentFilterableFields } from './payment.constant';
+import { TPaymentFilters } from './payment.interface';
 import { PaymentService } from './payment.service';
 
 const init = catchAsync(async (req: Request, res: Response) => {
@@ -58,4 +61,27 @@ const ipn = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-export const PaymentController = { init, success, fail, cancel, ipn };
+const getMine = catchAsync(async (req: Request, res: Response) => {
+  const filters = pickQuery(req.query, [...paymentFilterableFields]) as TPaymentFilters;
+  const options = pickQuery(req.query, ['page', 'limit', 'sortBy', 'sortOrder']);
+  const { data, meta } = await PaymentService.getMine(authUser(req), filters, options);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: 'Payments retrieved successfully',
+    meta,
+    data,
+  });
+});
+
+const getById = catchAsync(async (req: Request, res: Response) => {
+  const result = await PaymentService.getById(authUser(req), req.params.id);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: 'Payment retrieved successfully',
+    data: result,
+  });
+});
+
+export const PaymentController = { init, success, fail, cancel, ipn, getMine, getById };

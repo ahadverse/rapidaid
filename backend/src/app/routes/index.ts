@@ -1,11 +1,13 @@
 import { Request, Response, Router } from 'express';
 import { config } from '../../config';
 import { DocsRoutes } from '../docs/docs.route';
+import { AdminRoutes } from '../modules/admin/admin.route';
 import { AmbulanceRoutes } from '../modules/ambulance/ambulance.route';
 import { AuthRoutes } from '../modules/auth/auth.route';
 import { DriverRoutes } from '../modules/driver/driver.route';
 import { EmergencyRequestRoutes } from '../modules/emergencyRequest/emergencyRequest.route';
 import { HospitalRoutes } from '../modules/hospital/hospital.route';
+import { NotificationRoutes } from '../modules/notification/notification.route';
 import { PaymentRoutes } from '../modules/payment/payment.route';
 import { TripRoutes } from '../modules/trip/trip.route';
 import { UserRoutes } from '../modules/user/user.route';
@@ -27,6 +29,8 @@ const moduleRoutes: TModuleRoute[] = [
   { path: '/emergency-requests', route: EmergencyRequestRoutes },
   { path: '/trips', route: TripRoutes },
   { path: '/payments', route: PaymentRoutes },
+  { path: '/notifications', route: NotificationRoutes },
+  { path: '/admin', route: AdminRoutes },
   { path: '/docs', route: DocsRoutes },
 ];
 

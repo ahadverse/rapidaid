@@ -1,5 +1,6 @@
 import {
   AmbulanceStatus,
+  NotificationType,
   PaymentStatus,
   Prisma,
   RequestStatus,
@@ -11,6 +12,7 @@ import prisma from '../../lib/prisma';
 import { TJwtPayload } from '../../utils/jwt';
 import { buildMeta, calculatePagination, TPaginationOptions } from '../../utils/paginationHelper';
 import generateTransactionId from '../../utils/transactionId';
+import { NotificationService } from '../notification/notification.service';
 import {
   COMPLETABLE_TRIP_STATUSES,
   HOSPITAL_SELECTABLE_STATUSES,
@@ -157,6 +159,21 @@ const cancelTrip = async (trip: TLoadedTrip, cancelReason: string) =>
       data: { status: RequestStatus.CANCELLED, cancelReason },
     });
 
+    await NotificationService.notify(tx, [
+      {
+        userId: trip.request.patientId,
+        title: 'Trip cancelled',
+        message: `Your ambulance trip was cancelled: ${cancelReason}`,
+        type: NotificationType.TRIP_STATUS,
+      },
+      {
+        userId: trip.driver.userId,
+        title: 'Trip cancelled',
+        message: `Trip ${trip.id} was cancelled: ${cancelReason}`,
+        type: NotificationType.TRIP_STATUS,
+      },
+    ]);
+
     return tx.trip.findUniqueOrThrow({ where: { id: trip.id }, select: tripDetailSelect });
   });
 
@@ -201,6 +218,15 @@ const updateStatus = async (user: TJwtPayload, id: string, payload: TUpdateTripS
   if (moved.count === 0) {
     throw new AppError(409, 'This trip was just updated by someone else');
   }
+
+  await NotificationService.notify(prisma, [
+    {
+      userId: trip.request.patientId,
+      title: 'Trip update',
+      message: `Your ambulance trip is now ${payload.status.replace(/_/g, ' ').toLowerCase()}.`,
+      type: NotificationType.TRIP_STATUS,
+    },
+  ]);
 
   return prisma.trip.findUniqueOrThrow({ where: { id }, select: tripDetailSelect });
 };
@@ -307,6 +333,15 @@ const complete = async (user: TJwtPayload, id: string, payload: TCompleteTripPay
         },
       },
     });
+
+    await NotificationService.notify(tx, [
+      {
+        userId: trip.request.patientId,
+        title: 'Trip completed',
+        message: `Your trip is complete. Fare due: BDT ${fare.toFixed(2)}.`,
+        type: NotificationType.PAYMENT,
+      },
+    ]);
 
     const settled = await tx.trip.findUniqueOrThrow({ where: { id }, select: tripDetailSelect });
 

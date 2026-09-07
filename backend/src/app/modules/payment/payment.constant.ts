@@ -14,6 +14,10 @@ export const DEFAULT_BILLING_CITY = 'Dhaka';
 
 export const VALID_GATEWAY_STATUSES = ['VALID', 'VALIDATED'];
 
+export const paymentSortableFields = ['createdAt', 'paidAt', 'amount', 'status'] as const;
+
+export const paymentFilterableFields = ['status', 'tripId'] as const;
+
 export const paymentSelect = {
   id: true,
   amount: true,
