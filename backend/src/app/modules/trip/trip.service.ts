@@ -8,7 +8,7 @@ import {
   TripStatus,
 } from '@prisma/client';
 import AppError from '../../errors/AppError';
-import prisma from '../../lib/prisma';
+import prisma, { transactionOptions } from '../../lib/prisma';
 import { TJwtPayload } from '../../utils/jwt';
 import { buildMeta, calculatePagination, TPaginationOptions } from '../../utils/paginationHelper';
 import generateTransactionId from '../../utils/transactionId';
@@ -175,7 +175,7 @@ const cancelTrip = async (trip: TLoadedTrip, cancelReason: string) =>
     ]);
 
     return tx.trip.findUniqueOrThrow({ where: { id: trip.id }, select: tripDetailSelect });
-  });
+  }, transactionOptions);
 
 const updateStatus = async (user: TJwtPayload, id: string, payload: TUpdateTripStatusPayload) => {
   const trip = await loadTripOrFail(id);
@@ -346,7 +346,7 @@ const complete = async (user: TJwtPayload, id: string, payload: TCompleteTripPay
     const settled = await tx.trip.findUniqueOrThrow({ where: { id }, select: tripDetailSelect });
 
     return { ...settled, payment };
-  });
+  }, transactionOptions);
 };
 
 export const TripService = {

@@ -2,7 +2,7 @@ import { Prisma, Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { config } from '../../../config';
 import AppError from '../../errors/AppError';
-import prisma from '../../lib/prisma';
+import prisma, { transactionOptions } from '../../lib/prisma';
 import { buildMeta, calculatePagination, TPaginationOptions } from '../../utils/paginationHelper';
 import { ACTIVE_TRIP_STATUSES } from '../trip/trip.constant';
 import { driverProfileSelect, driverSortableFields } from './driver.constant';
@@ -49,7 +49,7 @@ const create = async (payload: TCreateDriverPayload) => {
       data: { userId: user.id, licenseNumber, nid, ambulanceId: ambulanceId ?? null },
       select: driverProfileSelect,
     });
-  });
+  }, transactionOptions);
 };
 
 const getAll = async (filters: TDriverFilters, options: TPaginationOptions) => {
