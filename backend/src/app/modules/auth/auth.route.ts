@@ -1,16 +1,22 @@
 import { Router } from 'express';
 import auth from '../../middlewares/auth';
+import { authLimiter } from '../../middlewares/rateLimiter';
 import validateRequest from '../../middlewares/validateRequest';
 import { AuthController } from './auth.controller';
 import { AuthValidation } from './auth.validation';
 
 const router = Router();
 
-router.post('/register', validateRequest(AuthValidation.register), AuthController.register);
-router.post('/login', validateRequest(AuthValidation.login), AuthController.login);
+router.post(
+  '/register',
+  authLimiter,
+  validateRequest(AuthValidation.register),
+  AuthController.register,
+);
+router.post('/login', authLimiter, validateRequest(AuthValidation.login), AuthController.login);
 router.get('/google', AuthController.googleLogin);
 router.get('/google/callback', AuthController.googleCallback);
-router.post('/refresh-token', AuthController.refreshToken);
+router.post('/refresh-token', authLimiter, AuthController.refreshToken);
 router.post(
   '/change-password',
   auth(),

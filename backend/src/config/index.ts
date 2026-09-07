@@ -27,6 +27,12 @@ export const config = {
   clientUrl: optionalEnv('CLIENT_URL', 'http://localhost:3000'),
   databaseUrl: requiredEnv('DATABASE_URL'),
   bcryptSaltRounds: Number(optionalEnv('BCRYPT_SALT_ROUNDS', '12')),
+  redisUrl: optionalEnv('REDIS_URL', ''),
+  rateLimit: {
+    windowMs: Number(optionalEnv('RATE_LIMIT_WINDOW_MS', '900000')),
+    max: Number(optionalEnv('RATE_LIMIT_MAX', '300')),
+    authMax: Number(optionalEnv('RATE_LIMIT_AUTH_MAX', '20')),
+  },
   jwt: {
     accessSecret: requiredEnv('JWT_ACCESS_SECRET'),
     accessExpiresIn: optionalEnv('JWT_ACCESS_EXPIRES_IN', '1d'),

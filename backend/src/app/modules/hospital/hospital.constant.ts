@@ -4,6 +4,10 @@ export const hospitalFilterableFields = ['searchTerm', 'area', 'specialization']
 
 export const HOSPITAL_PHONE_REGEX = /^\+?[\d\s-]{6,20}$/;
 
+export const HOSPITAL_CACHE_PREFIX = 'hospitals:list:';
+
+export const HOSPITAL_CACHE_TTL_SECONDS = 120;
+
 export const hospitalListSelect = {
   id: true,
   name: true,

@@ -1,6 +1,7 @@
 import { config } from './config';
 import { Server } from 'http';
 import app from './app';
+import { disconnectRedis } from './app/lib/redis';
 
 let server: Server;
 
@@ -29,6 +30,8 @@ process.on('uncaughtException', (error) => {
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, closing server...');
   if (server) {
-    server.close(() => process.exit(0));
+    server.close(() => {
+      void disconnectRedis().finally(() => process.exit(0));
+    });
   }
 });
