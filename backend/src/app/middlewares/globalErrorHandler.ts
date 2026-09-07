@@ -54,6 +54,8 @@ const globalErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     success: false,
     statusCode,
     message,
+    // `errors` is the key the assignment spec requires; `errorSources` is kept as an alias.
+    errors: errorSources,
     errorSources,
     ...(config.isProduction ? {} : { stack: err instanceof Error ? err.stack : undefined }),
   });

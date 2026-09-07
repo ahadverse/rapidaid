@@ -41,6 +41,7 @@ const errors = {
   403: { $ref: '#/components/responses/Forbidden' },
   404: { $ref: '#/components/responses/NotFound' },
   409: { $ref: '#/components/responses/Conflict' },
+  429: { $ref: '#/components/responses/TooManyRequests' },
 };
 
 const pick = (...codes: number[]) =>
@@ -83,7 +84,7 @@ export const accessByOperation: Record<string, TAccess> = {
   'patch /users/me': { roles: 'Authenticated', detail: 'Any authenticated role, own record only.' },
   'get /users': { roles: 'ADMIN' },
   'get /users/{id}': { roles: 'ADMIN' },
-  'patch /users/{id}': { roles: 'ADMIN' },
+  'patch /users/{id}/status': { roles: 'ADMIN' },
   'delete /users/{id}': { roles: 'ADMIN' },
 
   'post /drivers': { roles: 'ADMIN' },
@@ -153,6 +154,28 @@ export const accessByOperation: Record<string, TAccess> = {
   'post /payments/fail': { roles: 'Public', detail: 'Posted by SSLCommerz, not by a client.' },
   'post /payments/cancel': { roles: 'Public', detail: 'Posted by SSLCommerz, not by a client.' },
   'post /payments/ipn': { roles: 'Public', detail: 'Posted by SSLCommerz server to server.' },
+  'get /payments/me': {
+    roles: 'PATIENT, ADMIN',
+    detail: 'PATIENT sees their own payments. ADMIN sees every payment.',
+  },
+  'get /payments/{id}': {
+    roles: 'PATIENT, ADMIN',
+    detail: 'The PATIENT who was billed, or any ADMIN.',
+  },
+
+  'get /notifications': { roles: 'Authenticated', detail: 'Any authenticated role, own inbox.' },
+  'patch /notifications/read-all': {
+    roles: 'Authenticated',
+    detail: 'Any authenticated role, own inbox.',
+  },
+  'patch /notifications/{id}/read': {
+    roles: 'Authenticated',
+    detail: 'Any authenticated role, own notification.',
+  },
+
+  'get /admin/dashboard-stats': { roles: 'ADMIN' },
+  'get /admin/audit-logs': { roles: 'ADMIN' },
+  'get /admin/reports/trips': { roles: 'ADMIN' },
 };
 
 type TOperation = {
@@ -201,6 +224,10 @@ export const openapiSpec = {
       '| `ADMIN` | Full access across the platform |\n\n' +
       'Role alone is not always sufficient. Where ownership also applies, the **Access** line says so, ' +
       'and the API answers `403` when the role is right but the record belongs to someone else.\n\n' +
+      '## Rate limiting\n\n' +
+      'Every `/api/v1` route is rate limited (300 requests per 15 minutes per IP), and the auth ' +
+      'endpoints are held to a tighter budget of 20 failed attempts. Exceeding either answers `429` ' +
+      'in the standard error shape.\n\n' +
       '## Getting a token\n\n' +
       'Call `POST /auth/login`, then paste the returned `accessToken` into the **Authorize** button above.\n\n' +
       '| Role | Email | Password |\n' +
@@ -221,7 +248,9 @@ export const openapiSpec = {
     { name: 'Hospitals', description: 'Hospital directory' },
     { name: 'Emergency Requests', description: 'Raising and dispatching emergencies' },
     { name: 'Trips', description: 'The dispatch state machine and fare settlement' },
-    { name: 'Payments', description: 'SSLCommerz checkout and gateway callbacks' },
+    { name: 'Payments', description: 'SSLCommerz checkout, gateway callbacks and status tracking' },
+    { name: 'Notifications', description: 'Dispatch, trip and payment alerts per user' },
+    { name: 'Admin', description: 'Dashboard stats, audit trail and operational reports' },
     { name: 'Utility', description: 'Health and documentation' },
   ],
   components: {
@@ -244,8 +273,19 @@ export const openapiSpec = {
           success: { type: 'boolean', example: false },
           statusCode: { type: 'integer', example: 400 },
           message: { type: 'string', example: 'Validation error' },
+          errors: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                path: { type: 'string', example: 'body.email' },
+                message: { type: 'string', example: 'A valid email is required' },
+              },
+            },
+          },
           errorSources: {
             type: 'array',
+            description: 'Alias of `errors`, kept for backwards compatibility.',
             items: {
               type: 'object',
               properties: {
@@ -498,6 +538,10 @@ export const openapiSpec = {
         description: 'Conflicts with the current state of the resource',
         content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
       },
+      TooManyRequests: {
+        description: 'Rate limit exceeded',
+        content: { 'application/json': { schema: { $ref: '#/components/schemas/Error' } } },
+      },
     },
   },
   paths: withAccess({
@@ -626,6 +670,16 @@ export const openapiSpec = {
         parameters: [uuidParam('id', 'User id')],
         responses: { 200: ok('User retrieved successfully'), ...pick(401, 403, 404) },
       },
+      delete: {
+        tags: ['Users'],
+        summary: 'Soft delete a user',
+        description: 'ADMIN only. Sets isDeleted rather than removing the row.',
+        security: bearer,
+        parameters: [uuidParam('id', 'User id')],
+        responses: { 200: ok('User deleted successfully'), ...pick(401, 403, 404) },
+      },
+    },
+    '/users/{id}/status': {
       patch: {
         tags: ['Users'],
         summary: 'Block or unblock a user',
@@ -634,14 +688,6 @@ export const openapiSpec = {
         parameters: [uuidParam('id', 'User id')],
         requestBody: body('UpdateUserStatusInput'),
         responses: { 200: ok('User status updated successfully'), ...pick(400, 401, 403, 404) },
-      },
-      delete: {
-        tags: ['Users'],
-        summary: 'Soft delete a user',
-        description: 'ADMIN only. Sets isDeleted rather than removing the row.',
-        security: bearer,
-        parameters: [uuidParam('id', 'User id')],
-        responses: { 200: ok('User deleted successfully'), ...pick(401, 403, 404) },
       },
     },
     '/drivers': {
@@ -1062,6 +1108,138 @@ export const openapiSpec = {
           },
         },
         responses: { 200: ok('IPN processed'), ...pick(400, 404) },
+      },
+    },
+    '/payments/me': {
+      get: {
+        tags: ['Payments'],
+        summary: 'Track your payments',
+        description: 'Payment status tracking. ADMIN sees every payment, a PATIENT only their own.',
+        security: bearer,
+        parameters: [
+          ...paginationParams,
+          {
+            name: 'status',
+            in: 'query',
+            schema: { type: 'string', enum: ['PENDING', 'PAID', 'FAILED', 'CANCELLED'] },
+          },
+          { name: 'tripId', in: 'query', schema: { type: 'string', format: 'uuid' } },
+        ],
+        responses: { 200: paginated('Payments retrieved successfully'), ...pick(400, 401) },
+      },
+    },
+    '/payments/{id}': {
+      get: {
+        tags: ['Payments'],
+        summary: 'Get one payment with its status',
+        security: bearer,
+        parameters: [uuidParam('id', 'Payment id')],
+        responses: {
+          200: ok('Payment retrieved successfully', {
+            id: 'b1c2…',
+            amount: '675.00',
+            status: 'PAID',
+            transactionId: 'RA-MTQ1NH1W-F2F4D4DC',
+            paidAt: '2026-09-07T09:14:02.000Z',
+          }),
+          ...pick(401, 403, 404),
+        },
+      },
+    },
+    '/notifications': {
+      get: {
+        tags: ['Notifications'],
+        summary: 'Read your notification inbox',
+        description: 'Meta carries an `unread` count alongside the usual pagination fields.',
+        security: bearer,
+        parameters: [
+          ...paginationParams,
+          {
+            name: 'type',
+            in: 'query',
+            schema: { type: 'string', enum: ['DISPATCH', 'TRIP_STATUS', 'PAYMENT', 'SYSTEM'] },
+          },
+          { name: 'isRead', in: 'query', schema: { type: 'string', enum: ['true', 'false'] } },
+        ],
+        responses: { 200: paginated('Notifications retrieved successfully'), ...pick(400, 401) },
+      },
+    },
+    '/notifications/read-all': {
+      patch: {
+        tags: ['Notifications'],
+        summary: 'Mark every notification as read',
+        security: bearer,
+        responses: { 200: ok('All notifications marked as read', { updated: 4 }), ...pick(401) },
+      },
+    },
+    '/notifications/{id}/read': {
+      patch: {
+        tags: ['Notifications'],
+        summary: 'Mark one notification as read',
+        security: bearer,
+        parameters: [uuidParam('id', 'Notification id')],
+        responses: { 200: ok('Notification marked as read'), ...pick(400, 401, 404) },
+      },
+    },
+    '/admin/dashboard-stats': {
+      get: {
+        tags: ['Admin'],
+        summary: 'Platform dashboard statistics',
+        description:
+          'Fleet, emergency, trip and revenue counters in one call. Cached in Redis for 60 seconds when REDIS_URL is set — the `cached` flag says which path served the response.',
+        security: bearer,
+        responses: {
+          200: ok('Dashboard stats retrieved successfully', {
+            users: { total: 12, blocked: 0, byRole: { PATIENT: 8, DRIVER: 3, ADMIN: 1 } },
+            ambulances: { total: 5, byStatus: { AVAILABLE: 4, ON_TRIP: 1, MAINTENANCE: 0 } },
+            revenue: { collected: '4275.00', outstanding: '675.00' },
+            cached: false,
+          }),
+          ...pick(401, 403),
+        },
+      },
+    },
+    '/admin/audit-logs': {
+      get: {
+        tags: ['Admin'],
+        summary: 'Read the audit trail',
+        description:
+          'Every dispatch, user block, trip completion and settled payment is recorded here with actor, before and after.',
+        security: bearer,
+        parameters: [
+          ...paginationParams,
+          {
+            name: 'entity',
+            in: 'query',
+            schema: { type: 'string', example: 'Trip' },
+          },
+          { name: 'action', in: 'query', schema: { type: 'string', example: 'DISPATCH' } },
+          { name: 'actorId', in: 'query', schema: { type: 'string', format: 'uuid' } },
+          { name: 'from', in: 'query', schema: { type: 'string', format: 'date' } },
+          { name: 'to', in: 'query', schema: { type: 'string', format: 'date' } },
+        ],
+        responses: { 200: paginated('Audit logs retrieved successfully'), ...pick(400, 401, 403) },
+      },
+    },
+    '/admin/reports/trips': {
+      get: {
+        tags: ['Admin'],
+        summary: 'Operational trip and revenue report',
+        description:
+          'Defaults to the last 30 days. Includes status and priority breakdowns, billed against collected revenue, the busiest hospitals and a per-day series.',
+        security: bearer,
+        parameters: [
+          { name: 'from', in: 'query', schema: { type: 'string', format: 'date' } },
+          { name: 'to', in: 'query', schema: { type: 'string', format: 'date' } },
+        ],
+        responses: {
+          200: ok('Trip report generated successfully', {
+            trips: { completed: 18, cancelled: 2, averageFare: '612.50' },
+            revenue: { billed: '11025.00', collected: '9800.00', paidPayments: 16 },
+            daily: [{ date: '2026-09-06', trips: 4, revenue: 2450 }],
+          }),
+          ...pick(400, 401, 403),
+        },
       },
     },
   }),

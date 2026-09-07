@@ -59,6 +59,16 @@
       "key": "transactionId",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "paymentId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "notificationId",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -2023,6 +2033,347 @@
                 }
               ]
             }
+          },
+          "response": []
+        },
+        {
+          "name": "My Payments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/me?page=1&limit=10&sortBy=createdAt&sortOrder=desc&status=PAID&tripId={{tripId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "me"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, defaults to 1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Rows per page, max 100",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort on",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "asc or desc",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "PAID",
+                  "description": "PENDING | PAID | FAILED | CANCELLED",
+                  "disabled": true
+                },
+                {
+                  "key": "tripId",
+                  "value": "{{tripId}}",
+                  "description": "Filter to one trip",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Payment status tracking. A PATIENT sees only their own payments, an ADMIN sees every payment. Saves the first payment id into {{paymentId}}."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.length) {",
+                  "  pm.collectionVariables.set('paymentId', body.data[0].id);",
+                  "  console.log('saved paymentId = ' + body.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Payment By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/{{paymentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "{{paymentId}}"
+              ]
+            },
+            "description": "The PATIENT who was billed, or any ADMIN. Returns the payment with its gateway status and the trip it settles."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "description": "Dispatch, trip status and payment alerts. Written inside the same transaction as the event that raised them.",
+      "item": [
+        {
+          "name": "My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications?page=1&limit=10&sortBy=createdAt&sortOrder=desc&type=DISPATCH&isRead=false",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, defaults to 1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Rows per page, max 100",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort on",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "asc or desc",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "DISPATCH",
+                  "description": "DISPATCH | TRIP_STATUS | PAYMENT | SYSTEM",
+                  "disabled": true
+                },
+                {
+                  "key": "isRead",
+                  "value": "false",
+                  "description": "true or false",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Any authenticated role, own inbox only. Meta carries an unread count. Saves the first notification id into {{notificationId}}."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.length) {",
+                  "  pm.collectionVariables.set('notificationId', body.data[0].id);",
+                  "  console.log('saved notificationId = ' + body.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            },
+            "description": "Any authenticated role, on their own notification. Returns 404 for someone else's notification."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark All Notifications Read",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notifications",
+                "read-all"
+              ]
+            },
+            "description": "Any authenticated role. Returns how many rows were flipped to read."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "ADMIN only. Dashboard counters, the audit trail and the operational trip report.",
+      "item": [
+        {
+          "name": "Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard-stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "dashboard-stats"
+              ]
+            },
+            "description": "ADMIN only. Users, fleet, emergencies, trips and revenue in one call. Cached in Redis for 60 seconds when REDIS_URL is configured; the cached flag in the response says which path served it."
+          },
+          "response": []
+        },
+        {
+          "name": "Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/audit-logs?page=1&limit=10&sortBy=createdAt&sortOrder=desc&entity=Trip&action=DISPATCH&actorId={{userId}}&from=2026-09-01&to=2026-09-30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, defaults to 1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Rows per page, max 100",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort on",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "asc or desc",
+                  "disabled": true
+                },
+                {
+                  "key": "entity",
+                  "value": "Trip",
+                  "description": "Trip | EmergencyRequest | Payment | User",
+                  "disabled": true
+                },
+                {
+                  "key": "action",
+                  "value": "DISPATCH",
+                  "description": "DISPATCH | COMPLETE_TRIP | PAYMENT_PAID | BLOCK_USER",
+                  "disabled": true
+                },
+                {
+                  "key": "actorId",
+                  "value": "{{userId}}",
+                  "description": "Filter to one actor",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "2026-09-01",
+                  "description": "Start of the range",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "2026-09-30",
+                  "description": "End of the range",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "ADMIN only. Every dispatch, user block, trip completion and settled payment, with actor plus before and after snapshots."
+          },
+          "response": []
+        },
+        {
+          "name": "Trip Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/admin/reports/trips?from=2026-09-01&to=2026-09-30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "reports",
+                "trips"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-09-01",
+                  "description": "Start of the range",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "2026-09-30",
+                  "description": "End of the range",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "ADMIN only. Defaults to the last 30 days. Status and priority breakdowns, billed against collected revenue, busiest hospitals and a per-day series bucketed in Postgres."
           },
           "response": []
         }
