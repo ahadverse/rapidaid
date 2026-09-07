@@ -1,6 +1,6 @@
 import { NotificationType, PaymentStatus, Prisma, Role, TripStatus } from '@prisma/client';
 import AppError from '../../errors/AppError';
-import prisma from '../../lib/prisma';
+import prisma, { transactionOptions } from '../../lib/prisma';
 import {
   assertSslCommerzConfigured,
   initPaymentSession,
@@ -232,7 +232,7 @@ const settle = async (payload: TCallbackPayload) => {
     ]);
 
     return { alreadySettled: false };
-  });
+  }, transactionOptions);
 
   return { settled: true, ...settled, payment: await readPayment(payment.id) };
 };

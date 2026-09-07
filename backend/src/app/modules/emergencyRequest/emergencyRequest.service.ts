@@ -9,7 +9,7 @@ import {
   UserStatus,
 } from '@prisma/client';
 import AppError from '../../errors/AppError';
-import prisma from '../../lib/prisma';
+import prisma, { transactionOptions } from '../../lib/prisma';
 import { buildMeta, calculatePagination, TPaginationOptions } from '../../utils/paginationHelper';
 import { TJwtPayload } from '../../utils/jwt';
 import { NotificationService } from '../notification/notification.service';
@@ -309,7 +309,7 @@ const dispatch = async (adminId: string, id: string, payload: TDispatchPayload) 
     ]);
 
     return trip;
-  });
+  }, transactionOptions);
 };
 
 export const EmergencyRequestService = { create, getAll, getById, update, cancel, dispatch };
