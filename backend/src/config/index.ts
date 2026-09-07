@@ -24,7 +24,11 @@ export const config = {
   env: nodeEnv,
   isProduction: nodeEnv === 'production',
   port: Number(optionalEnv('PORT', '5000')),
-  clientUrl: optionalEnv('CLIENT_URL', 'http://localhost:3000'),
+  // Comma separated so the Vercel production domain, its preview builds and localhost can coexist.
+  clientUrls: optionalEnv('CLIENT_URL', 'http://localhost:3000')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean),
   databaseUrl: requiredEnv('DATABASE_URL'),
   bcryptSaltRounds: Number(optionalEnv('BCRYPT_SALT_ROUNDS', '12')),
   redisUrl: optionalEnv('REDIS_URL', ''),
