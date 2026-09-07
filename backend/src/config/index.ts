@@ -24,7 +24,10 @@ export const config = {
   env: nodeEnv,
   isProduction: nodeEnv === 'production',
   port: Number(optionalEnv('PORT', '5000')),
-  // Comma separated so the Vercel production domain, its preview builds and localhost can coexist.
+  publicUrl: optionalEnv(
+    'API_PUBLIC_URL',
+    optionalEnv('RENDER_EXTERNAL_URL', 'https://rapidaid-api-ivyf.onrender.com'),
+  ),
   clientUrls: optionalEnv('CLIENT_URL', 'http://localhost:3000')
     .split(',')
     .map((origin) => origin.trim())

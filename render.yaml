@@ -1,4 +1,12 @@
 services:
+  - type: keyvalue
+    name: rapidaid-cache
+    plan: free
+    region: singapore
+    maxmemoryPolicy: allkeys-lru
+    # Empty list means the instance is reachable only from services inside this workspace.
+    ipAllowList: []
+
   - type: web
     name: rapidaid-api
     runtime: node
@@ -60,4 +68,7 @@ services:
       - key: SEED_PASSWORD
         sync: false
       - key: REDIS_URL
-        sync: false
+        fromService:
+          type: keyvalue
+          name: rapidaid-cache
+          property: connectionString

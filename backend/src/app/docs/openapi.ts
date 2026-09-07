@@ -236,10 +236,13 @@ export const openapiSpec = {
       '| DRIVER | driver1@rapidaid.com | Demo@RapidAid2026 |\n' +
       '| PATIENT | patient@rapidaid.com | Demo@RapidAid2026 |',
   },
-  servers: [
-    { url: `http://localhost:${config.port}/api/v1`, description: 'Local development' },
-    { url: 'https://rapidaid-api.onrender.com/api/v1', description: 'Production' },
-  ],
+  // Swagger picks the first entry, so the deployed docs must not default to localhost.
+  servers: config.isProduction
+    ? [{ url: `${config.publicUrl}/api/v1`, description: 'Production' }]
+    : [
+        { url: `http://localhost:${config.port}/api/v1`, description: 'Local development' },
+        { url: `${config.publicUrl}/api/v1`, description: 'Production' },
+      ],
   tags: [
     { name: 'Auth', description: 'Registration, login, Google OAuth, tokens' },
     { name: 'Users', description: 'Profile and admin user management' },

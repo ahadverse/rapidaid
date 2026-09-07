@@ -10,17 +10,9 @@ machine that only moves in legal directions.
 
 ---
 
-## 🔗 Submission Links
+## 🔗 Live API
 
-```text
-Project Name    : Emergency Ambulance Dispatch (RapidAid)
-Backend Repo    : https://github.com/<your-username>/rapidaid
-Live API        : https://rapidaid-api.onrender.com
-API Docs        : https://rapidaid-api.onrender.com/api/v1/docs
-Demo Video      : <paste the Loom or Drive link>
-Admin Email     : admin@rapidaid.com
-Admin Password  : Admin@RapidAid2026
-```
+Base URL: **https://rapidaid-api-ivyf.onrender.com**
 
 | Resource | URL |
 |---|---|
@@ -273,7 +265,7 @@ Base URL: `/api/v1`. All responses use one envelope.
 ## 💻 Local Setup
 
 ```bash
-git clone https://github.com/<your-username>/rapidaid.git
+git clone https://github.com/ahadverse/rapidaid.git
 cd rapidaid/backend
 npm install
 
@@ -312,7 +304,7 @@ The repo ships a `render.yaml` blueprint.
    `/api/v1/health`).
 3. Fill in the secrets marked `sync: false` — `DATABASE_URL` (Neon), both JWT secrets, the Google
    OAuth pair, the SSLCommerz store credentials, and the four callback URLs pointing at the live
-   host (`https://<service>.onrender.com/api/v1/payments/...`). `REDIS_URL` is optional.
+   host (`https://rapidaid-api-ivyf.onrender.com/api/v1/payments/...`). `REDIS_URL` is optional.
 4. Deploy, then seed the production database once from your machine:
    `npm run seed:prod` with `.env.production` pointing at the same `DATABASE_URL`.
 5. Update `GOOGLE_CALLBACK_URL` in the GCP console and the SSLCommerz panel to the live host.
