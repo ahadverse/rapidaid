@@ -23,7 +23,6 @@ const findActiveOrFail = async (id: string) => {
   return hospital;
 };
 
-// Hospital has no natural unique key, so name + area stands in for one.
 const assertNoDuplicate = async (name: string, area: string, excludeId?: string) => {
   const clash = await prisma.hospital.findFirst({
     where: {
@@ -115,7 +114,6 @@ const update = async (id: string, payload: TUpdateHospitalPayload) => {
 const softDelete = async (id: string) => {
   await findActiveOrFail(id);
 
-  // An ambulance may already be en route here, so the destination cannot disappear mid-trip.
   const activeTrips = await prisma.trip.count({
     where: { hospitalId: id, status: { in: ACTIVE_TRIP_STATUSES } },
   });

@@ -108,7 +108,6 @@ const update = async (id: string, payload: TUpdateAmbulancePayload) => {
 const updateStatus = async (id: string, status: AmbulanceStatus, actor: TJwtPayload) => {
   const ambulance = await findActiveOrFail(id);
 
-  // A driver may only touch the ambulance they are assigned to.
   if (actor.role === Role.DRIVER) {
     const profile = await prisma.driverProfile.findUnique({
       where: { userId: actor.userId },
@@ -120,7 +119,6 @@ const updateStatus = async (id: string, status: AmbulanceStatus, actor: TJwtPayl
     }
   }
 
-  // ON_TRIP is owned by dispatch and trip completion, so it is not set or cleared by hand.
   if (ambulance.status === AmbulanceStatus.ON_TRIP) {
     throw new AppError(409, 'Ambulance is on an active trip');
   }

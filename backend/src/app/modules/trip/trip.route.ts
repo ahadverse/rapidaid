@@ -7,7 +7,6 @@ import { TripValidation } from './trip.validation';
 
 const router = Router();
 
-// Kept above /:id so "me" is never read as a trip id.
 router.get(
   '/me',
   auth(Role.DRIVER, Role.PATIENT),

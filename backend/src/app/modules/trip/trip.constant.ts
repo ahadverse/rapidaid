@@ -1,6 +1,5 @@
 import { TripStatus } from '@prisma/client';
 
-// Trips that still occupy an ambulance, a driver and a destination hospital.
 export const ACTIVE_TRIP_STATUSES: TripStatus[] = [
   TripStatus.DISPATCHED,
   TripStatus.EN_ROUTE_TO_PICKUP,
@@ -9,8 +8,6 @@ export const ACTIVE_TRIP_STATUSES: TripStatus[] = [
   TripStatus.ARRIVED_AT_HOSPITAL,
 ];
 
-// The whole state machine in one place — anything not listed here is an illegal
-// jump and is rejected with a 400.
 export const TRIP_STATUS_TRANSITIONS: Record<TripStatus, TripStatus[]> = {
   [TripStatus.DISPATCHED]: [TripStatus.EN_ROUTE_TO_PICKUP, TripStatus.CANCELLED],
   [TripStatus.EN_ROUTE_TO_PICKUP]: [TripStatus.PATIENT_PICKED_UP, TripStatus.CANCELLED],
@@ -21,16 +18,12 @@ export const TRIP_STATUS_TRANSITIONS: Record<TripStatus, TripStatus[]> = {
   [TripStatus.CANCELLED]: [],
 };
 
-// Completion settles the fare, raises the payment and frees the ambulance, so it
-// runs as its own transaction behind PATCH /trips/:id/complete.
 export const STATUS_ENDPOINT_BLOCKED: TripStatus[] = [TripStatus.COMPLETED];
 
-// A trip is only billable once the ambulance has actually delivered the patient.
 export const COMPLETABLE_TRIP_STATUSES: TripStatus[] = [TripStatus.ARRIVED_AT_HOSPITAL];
 
 export const MAX_TRIP_DISTANCE_KM = 500;
 
-// A destination can be chosen or changed right up until the ambulance arrives.
 export const HOSPITAL_SELECTABLE_STATUSES: TripStatus[] = [
   TripStatus.DISPATCHED,
   TripStatus.EN_ROUTE_TO_PICKUP,

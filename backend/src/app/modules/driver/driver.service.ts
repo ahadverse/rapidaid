@@ -39,8 +39,6 @@ const create = async (payload: TCreateDriverPayload) => {
 
   const hashed = await bcrypt.hash(password, config.bcryptSaltRounds);
 
-  // The account and its profile are created together so a half-provisioned
-  // driver — a DRIVER user with no profile — can never exist.
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: { name, email, phone, password: hashed, role: Role.DRIVER },
@@ -113,7 +111,6 @@ const updateMyAvailability = async (userId: string, isAvailable: boolean) => {
     throw new AppError(404, 'Driver profile not found');
   }
 
-  // Availability feeds the dispatch pool, and dispatch needs a vehicle to assign.
   if (isAvailable && !profile.ambulanceId) {
     throw new AppError(400, 'You need an assigned ambulance before going available');
   }

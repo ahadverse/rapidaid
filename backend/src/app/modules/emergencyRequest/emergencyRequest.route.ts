@@ -13,7 +13,6 @@ router.post(
   validateRequest(EmergencyRequestValidation.create),
   EmergencyRequestController.create,
 );
-// Admins get every request here; patients get only their own.
 router.get(
   '/',
   auth(Role.PATIENT, Role.ADMIN),

@@ -6,7 +6,7 @@ let server: Server;
 
 function bootstrap(): void {
   server = app.listen(config.port, () => {
-    console.log(`RapidAid API listening on http://localhost:${config.port} [${config.env}]`);
+    console.log(`RapidAid API listening on http://localhost:${config.port} in ${config.env}`);
   });
 }
 

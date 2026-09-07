@@ -38,7 +38,6 @@ const findOrFail = async (id: string) => {
   return request;
 };
 
-// Admins act on every request; a patient is confined to the ones they raised.
 const assertCanAccess = (user: TJwtPayload, patientId: string) => {
   if (user.role !== Role.ADMIN && user.userId !== patientId) {
     throw new AppError(403, 'You do not have permission to perform this action');
@@ -46,8 +45,6 @@ const assertCanAccess = (user: TJwtPayload, patientId: string) => {
 };
 
 const create = async (patientId: string, payload: TCreateEmergencyRequestPayload) => {
-  // One live emergency per caller — duplicates would tie up a second ambulance
-  // that another patient needs.
   const open = await prisma.emergencyRequest.findFirst({
     where: { patientId, status: { in: OPEN_REQUEST_STATUSES } },
     select: { id: true },
@@ -93,8 +90,6 @@ const getAll = async (
     prisma.emergencyRequest.findMany({
       where,
       select: emergencyRequestSelect,
-      // Postgres sorts an enum by its declared order, so sortBy=priority with
-      // sortOrder=asc lists CRITICAL first and LOW last.
       orderBy: { [orderByField]: sortOrder },
       skip,
       take: limit,
@@ -123,8 +118,6 @@ const update = async (
   const existing = await findOrFail(id);
   assertCanAccess(user, existing.patientId);
 
-  // Once dispatched the details are already with a driver on the road, so they
-  // are only editable while the request is still waiting.
   if (existing.status !== RequestStatus.PENDING) {
     throw new AppError(409, 'Only a pending emergency request can be updated');
   }
@@ -157,8 +150,6 @@ type TCrew = {
   ambulanceType: AmbulanceType;
 };
 
-// A driver is only dispatchable with an active account, an assigned ambulance that
-// is free, and no other trip still running.
 const findCrewCandidates = async (override: TDispatchPayload): Promise<TCrew[]> => {
   const candidates = await prisma.driverProfile.findMany({
     where: {
@@ -190,8 +181,6 @@ const findCrewCandidates = async (override: TDispatchPayload): Promise<TCrew[]> 
   );
 };
 
-// The requested type is a preference, not a requirement — refusing to send the
-// only free ambulance because it is the wrong trim would be worse for the patient.
 const pickCrew = (candidates: TCrew[], requestedType: AmbulanceType | null) =>
   (requestedType && candidates.find((crew) => crew.ambulanceType === requestedType)) ??
   candidates[0] ??
@@ -211,8 +200,6 @@ const dispatch = async (adminId: string, id: string, payload: TDispatchPayload) 
     throw new AppError(409, `A ${request.status} emergency request cannot be dispatched`);
   }
 
-  // Separating "your override does not exist" from "nothing is free" keeps a typo
-  // in an id from looking like an empty fleet.
   if (payload.ambulanceId) {
     const ambulance = await prisma.ambulance.findFirst({
       where: { id: payload.ambulanceId, isDeleted: false },
@@ -238,7 +225,6 @@ const dispatch = async (adminId: string, id: string, payload: TDispatchPayload) 
   const crew = pickCrew(await findCrewCandidates(payload), request.requestedAmbulanceType);
 
   if (!crew) {
-    // Park it rather than fail outright, so a retry works once the fleet frees up.
     if (request.status !== RequestStatus.NO_AMBULANCE_AVAILABLE) {
       await prisma.emergencyRequest.update({
         where: { id },
@@ -250,10 +236,6 @@ const dispatch = async (adminId: string, id: string, payload: TDispatchPayload) 
   }
 
   return prisma.$transaction(async (tx) => {
-    // Every claim below is a conditional update guarded by the state it expects.
-    // A concurrent dispatcher that got here first has already changed that state,
-    // so its update matches zero rows and this whole transaction rolls back
-    // instead of double-booking the ambulance.
     const claimedRequest = await tx.emergencyRequest.updateMany({
       where: { id, status: { in: DISPATCHABLE_REQUEST_STATUSES } },
       data: { status: RequestStatus.DISPATCHED },
@@ -281,8 +263,6 @@ const dispatch = async (adminId: string, id: string, payload: TDispatchPayload) 
       throw new AppError(409, 'That driver was just assigned to another emergency');
     }
 
-    // Trip.requestId is unique, so even a race that slipped past the guards above
-    // cannot produce two trips for one emergency.
     const trip = await tx.trip.create({
       data: {
         requestId: id,

@@ -1,10 +1,10 @@
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { Application, Request, Response } from 'express';
+import { landingPage } from './app/docs/landing';
 import globalErrorHandler from './app/middlewares/globalErrorHandler';
 import notFound from './app/middlewares/notFound';
 import router from './app/routes';
-import sendResponse from './app/utils/sendResponse';
 import { config } from './config';
 
 const app: Application = express();
@@ -22,13 +22,7 @@ app.use(
 app.use('/api/v1', router);
 
 app.get('/', (_req: Request, res: Response) => {
-  sendResponse(res, {
-    statusCode: 200,
-    message: 'Welcome to RapidAid — Emergency Response Platform',
-    data: {
-      docs: '/api/v1/health',
-    },
-  });
+  res.type('html').send(landingPage);
 });
 
 app.use(notFound);

@@ -1,0 +1,2059 @@
+{
+  "info": {
+    "name": "RapidAid API",
+    "description": "# RapidAid — Emergency Response Platform\n\nPriority-based ambulance dispatch, from emergency call to hospital arrival and payment.\n\n## Getting started\n\n1. Set the `baseUrl` variable (defaults to local: `http://localhost:5000/api/v1`).\n2. Run **Auth → Login as Patient** (or Admin / Driver). The token is saved to `accessToken` automatically by a test script, and every other request inherits it.\n3. Requests that need an id (`tripId`, `requestId`, …) pick it up automatically from the request that creates it.\n\n## Seeded accounts\n\n| Role | Email | Password |\n| --- | --- | --- |\n| Admin | admin@rapidaid.com | Admin@RapidAid2026 |\n| Driver | driver1@rapidaid.com | Demo@RapidAid2026 |\n| Patient | patient@rapidaid.com | Demo@RapidAid2026 |\n\n## Roles\n\nPATIENT raises emergencies and pays. DRIVER drives the trip state machine. ADMIN manages the fleet and dispatches.\n\n## The happy path\n\nLogin as Patient → Create Emergency Request → (Admin) Dispatch → (Driver) status to EN_ROUTE_TO_PICKUP → PATIENT_PICKED_UP → Select Hospital → EN_ROUTE_TO_HOSPITAL → ARRIVED_AT_HOSPITAL → Complete Trip → (Patient) Init Payment.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "driverId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "ambulanceId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "hospitalId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "requestId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "tripId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "transactionId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Registration, login, Google OAuth and token lifecycle.",
+      "item": [
+        {
+          "name": "Register Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Public. Creates a PATIENT account and returns an access token. Saves the token automatically.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tanvir Ahmed\",\n  \"email\": \"tanvir.new@example.com\",\n  \"password\": \"Patient@2026\",\n  \"phone\": \"+8801911000401\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', body.data.accessToken);",
+                  "  pm.collectionVariables.set('userId', body.data.user.id);",
+                  "  console.log('saved accessToken for ' + body.data.user.email);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Public. Returns an access token and sets an httpOnly refresh cookie. Saves the token to {{accessToken}}.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient@rapidaid.com\",\n  \"password\": \"Demo@RapidAid2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', body.data.accessToken);",
+                  "  pm.collectionVariables.set('userId', body.data.user.id);",
+                  "  console.log('saved accessToken for ' + body.data.user.email);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Switch the collection to an admin token.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@rapidaid.com\",\n  \"password\": \"Admin@RapidAid2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', body.data.accessToken);",
+                  "  pm.collectionVariables.set('userId', body.data.user.id);",
+                  "  console.log('saved accessToken for ' + body.data.user.email);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login as Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Switch the collection to a driver token.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"driver1@rapidaid.com\",\n  \"password\": \"Demo@RapidAid2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', body.data.accessToken);",
+                  "  pm.collectionVariables.set('userId', body.data.user.id);",
+                  "  console.log('saved accessToken for ' + body.data.user.email);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Google OAuth — Start",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "google"
+              ]
+            },
+            "description": "Redirects to the Google consent screen. Open this in a browser rather than Postman.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Google OAuth — Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/google/callback?code=authorization-code-from-google&state=state-from-the-cookie",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "google",
+                "callback"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "authorization-code-from-google"
+                },
+                {
+                  "key": "state",
+                  "value": "state-from-the-cookie"
+                }
+              ]
+            },
+            "description": "Google redirects here with a code and state. Called by the browser, not by hand.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "refresh-token"
+              ]
+            },
+            "description": "Exchanges the httpOnly refresh cookie for a fresh access token. No body.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "change-password"
+              ]
+            },
+            "description": "Any authenticated role. Changes your own password.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"Demo@RapidAid2026\",\n  \"newPassword\": \"NewDemo@2026\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Clears the refresh cookie."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "Own profile plus admin user management. Deletes are soft.",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "Any authenticated role."
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "Any authenticated role. At least one field required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tanvir Ahmed\",\n  \"phone\": \"+8801911000399\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=10&sortBy=createdAt&sortOrder=desc&searchTerm=rapidaid&role=DRIVER&status=ACTIVE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, defaults to 1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Rows per page, max 100",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort on",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "asc or desc",
+                  "disabled": true
+                },
+                {
+                  "key": "searchTerm",
+                  "value": "rapidaid",
+                  "description": "Matches name or email",
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": "DRIVER",
+                  "description": "PATIENT | DRIVER | ADMIN",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "description": "ACTIVE | BLOCKED",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "ADMIN only. Pagination, filter by role and status, search across name and email."
+          },
+          "response": []
+        },
+        {
+          "name": "Get User by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "ADMIN only."
+          },
+          "response": []
+        },
+        {
+          "name": "Block or Unblock User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}",
+                "status"
+              ]
+            },
+            "description": "ADMIN only. Writes an audit log entry.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"BLOCKED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "description": "ADMIN only. Sets isDeleted, never removes the row."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Drivers",
+      "description": "Driver profiles and the availability toggle that feeds the dispatch pool.",
+      "item": [
+        {
+          "name": "Create Driver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/drivers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "drivers"
+              ]
+            },
+            "description": "ADMIN only. Creates the user account and the driver profile together.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Kamrul Hasan\",\n  \"email\": \"driver4@rapidaid.com\",\n  \"password\": \"Demo@RapidAid2026\",\n  \"phone\": \"+8801811000204\",\n  \"licenseNumber\": \"DL-RA-77123\",\n  \"nid\": \"1993771201237\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.id) {",
+                  "  pm.collectionVariables.set('driverId', body.data.id);",
+                  "  console.log('saved driverId = ' + body.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Drivers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/drivers?page=1&limit=10&sortBy=createdAt&sortOrder=desc&searchTerm=Rafiqul&isAvailable=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "drivers"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, defaults to 1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Rows per page, max 100",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort on",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "asc or desc",
+                  "disabled": true
+                },
+                {
+                  "key": "searchTerm",
+                  "value": "Rafiqul",
+                  "description": "Matches driver name",
+                  "disabled": true
+                },
+                {
+                  "key": "isAvailable",
+                  "value": "true",
+                  "description": "true | false",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "ADMIN only. Filter by availability."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Driver Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/drivers/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "drivers",
+                "me"
+              ]
+            },
+            "description": "DRIVER only. Includes the assigned ambulance."
+          },
+          "response": []
+        },
+        {
+          "name": "Set My Availability",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/drivers/me/availability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "drivers",
+                "me",
+                "availability"
+              ]
+            },
+            "description": "DRIVER only. Going off duty removes you from the dispatch pool.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isAvailable\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ambulances",
+      "description": "Fleet CRUD. This is the primary demonstration of pagination, filtering, search and sorting.",
+      "item": [
+        {
+          "name": "Create Ambulance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ambulances",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ambulances"
+              ]
+            },
+            "description": "ADMIN only. Registration number must be unique.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"regNumber\": \"DHA-AMB-1005\",\n  \"type\": \"ICU\",\n  \"baseFare\": 2000,\n  \"perKmRate\": 80,\n  \"stationArea\": \"Gulshan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.id) {",
+                  "  pm.collectionVariables.set('ambulanceId', body.data.id);",
+                  "  console.log('saved ambulanceId = ' + body.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Ambulances",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ambulances?page=1&limit=10&sortBy=createdAt&sortOrder=desc&searchTerm=DHA&type=ICU&status=AVAILABLE&stationArea=Gulshan",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ambulances"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, defaults to 1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Rows per page, max 100",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort on",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "asc or desc",
+                  "disabled": true
+                },
+                {
+                  "key": "searchTerm",
+                  "value": "DHA",
+                  "description": "Matches registration number",
+                  "disabled": true
+                },
+                {
+                  "key": "type",
+                  "value": "ICU",
+                  "description": "BASIC | AC | ICU | FREEZER",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "AVAILABLE",
+                  "description": "AVAILABLE | ON_TRIP | MAINTENANCE",
+                  "disabled": true
+                },
+                {
+                  "key": "stationArea",
+                  "value": "Gulshan",
+                  "description": "Exact area, case insensitive",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "ADMIN or DRIVER. Every list feature at once: page, limit, sortBy, sortOrder, search on registration number, filter on type, status and station area."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Ambulance by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ambulances/{{ambulanceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ambulances",
+                "{{ambulanceId}}"
+              ]
+            },
+            "description": "ADMIN or DRIVER."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Ambulance",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ambulances/{{ambulanceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ambulances",
+                "{{ambulanceId}}"
+              ]
+            },
+            "description": "ADMIN only. At least one field required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseFare\": 2200,\n  \"perKmRate\": 85,\n  \"stationArea\": \"Banani\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Ambulance Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ambulances/{{ambulanceId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ambulances",
+                "{{ambulanceId}}",
+                "status"
+              ]
+            },
+            "description": "ADMIN or DRIVER. Writes an audit log entry.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"MAINTENANCE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete Ambulance",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ambulances/{{ambulanceId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ambulances",
+                "{{ambulanceId}}"
+              ]
+            },
+            "description": "ADMIN only."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Hospitals",
+      "description": "Hospital directory, readable by any authenticated role.",
+      "item": [
+        {
+          "name": "Create Hospital",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hospitals",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hospitals"
+              ]
+            },
+            "description": "ADMIN only.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Evercare Hospital Dhaka\",\n  \"address\": \"Plot 81, Block E, Bashundhara R/A\",\n  \"area\": \"Bashundhara\",\n  \"phone\": \"+8801711000104\",\n  \"specializations\": [\n    \"EMERGENCY\",\n    \"CARDIOLOGY\",\n    \"ICU\"\n  ],\n  \"availableBeds\": 30\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.id) {",
+                  "  pm.collectionVariables.set('hospitalId', body.data.id);",
+                  "  console.log('saved hospitalId = ' + body.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Hospitals",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/hospitals?page=1&limit=10&sortBy=createdAt&sortOrder=desc&searchTerm=Square&area=Gulshan&specialization=ICU",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hospitals"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, defaults to 1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Rows per page, max 100",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort on",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "asc or desc",
+                  "disabled": true
+                },
+                {
+                  "key": "searchTerm",
+                  "value": "Square",
+                  "description": "Matches hospital name",
+                  "disabled": true
+                },
+                {
+                  "key": "area",
+                  "value": "Gulshan",
+                  "disabled": true
+                },
+                {
+                  "key": "specialization",
+                  "value": "ICU",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Any authenticated role. Search by name, filter by area and specialization."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data[0] && body.data[0].id) {",
+                  "  pm.collectionVariables.set('hospitalId', body.data[0] && body.data[0].id);",
+                  "  console.log('saved hospitalId = ' + body.data[0] && body.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Hospital by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/hospitals/{{hospitalId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hospitals",
+                "{{hospitalId}}"
+              ]
+            },
+            "description": "Any authenticated role."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Hospital",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hospitals/{{hospitalId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hospitals",
+                "{{hospitalId}}"
+              ]
+            },
+            "description": "ADMIN only. At least one field required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"availableBeds\": 12,\n  \"area\": \"Gulshan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Soft Delete Hospital",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/hospitals/{{hospitalId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hospitals",
+                "{{hospitalId}}"
+              ]
+            },
+            "description": "ADMIN only."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Emergency Requests",
+      "description": "Raising an emergency and dispatching an ambulance to it.",
+      "item": [
+        {
+          "name": "Create Emergency Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/emergency-requests",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "emergency-requests"
+              ]
+            },
+            "description": "PATIENT only. One live request per patient. Coordinates are optional but must be given together.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pickupAddress\": \"House 12, Road 5, Dhanmondi, Dhaka\",\n  \"pickupLat\": 23.7461,\n  \"pickupLng\": 90.376,\n  \"patientCondition\": \"Road accident, heavy bleeding from the leg\",\n  \"priority\": \"CRITICAL\",\n  \"requestedAmbulanceType\": \"ICU\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.id) {",
+                  "  pm.collectionVariables.set('requestId', body.data.id);",
+                  "  console.log('saved requestId = ' + body.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Emergency Requests",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/emergency-requests?page=1&limit=10&sortBy=createdAt&sortOrder=desc&searchTerm=bleeding&status=PENDING&priority=CRITICAL",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "emergency-requests"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, defaults to 1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Rows per page, max 100",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort on",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "asc or desc",
+                  "disabled": true
+                },
+                {
+                  "key": "searchTerm",
+                  "value": "bleeding",
+                  "description": "Matches address or condition",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "description": "PENDING | DISPATCHED | COMPLETED | CANCELLED | NO_AMBULANCE_AVAILABLE",
+                  "disabled": true
+                },
+                {
+                  "key": "priority",
+                  "value": "CRITICAL",
+                  "description": "CRITICAL | HIGH | MEDIUM | LOW",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "ADMIN sees every request, PATIENT sees only their own. Sorting by priority lists CRITICAL first."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Emergency Request by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/emergency-requests/{{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "emergency-requests",
+                "{{requestId}}"
+              ]
+            },
+            "description": "The patient who raised it, or an admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Emergency Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/emergency-requests/{{requestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "emergency-requests",
+                "{{requestId}}"
+              ]
+            },
+            "description": "PATIENT only, and only while the request is still PENDING.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientCondition\": \"Road accident, bleeding controlled, patient conscious\",\n  \"priority\": \"HIGH\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Emergency Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/emergency-requests/{{requestId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "emergency-requests",
+                "{{requestId}}",
+                "cancel"
+              ]
+            },
+            "description": "PATIENT or ADMIN, only while PENDING.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cancelReason\": \"Patient was taken by a family car\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Dispatch Ambulance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/emergency-requests/{{requestId}}/dispatch",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "emergency-requests",
+                "{{requestId}}",
+                "dispatch"
+              ]
+            },
+            "description": "ADMIN only. Runs in one transaction: claims the request, ambulance and driver with conditional updates, creates the trip, writes an audit log. Send an empty body to let the dispatcher choose, or name an ambulance and driver to override.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.id) {",
+                  "  pm.collectionVariables.set('tripId', body.data.id);",
+                  "  console.log('saved tripId = ' + body.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Trips",
+      "description": "The dispatch state machine, hospital selection and fare settlement.",
+      "item": [
+        {
+          "name": "List All Trips",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trips?page=1&limit=10&sortBy=createdAt&sortOrder=desc&status=COMPLETED&driverId={{driverId}}&from=2026-09-01&to=2026-09-30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trips"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, defaults to 1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Rows per page, max 100",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort on",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "asc or desc",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "COMPLETED",
+                  "description": "Any TripStatus",
+                  "disabled": true
+                },
+                {
+                  "key": "driverId",
+                  "value": "{{driverId}}",
+                  "disabled": true
+                },
+                {
+                  "key": "from",
+                  "value": "2026-09-01",
+                  "description": "Dispatched on or after",
+                  "disabled": true
+                },
+                {
+                  "key": "to",
+                  "value": "2026-09-30",
+                  "description": "Dispatched on or before",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "ADMIN only. Filter by status, driver and dispatch date range."
+          },
+          "response": []
+        },
+        {
+          "name": "My Trips",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trips/me?page=1&limit=10&sortBy=createdAt&sortOrder=desc&status=DISPATCHED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trips",
+                "me"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number, defaults to 1",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Rows per page, max 100",
+                  "disabled": true
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Field to sort on",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "asc or desc",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "DISPATCHED",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "DRIVER sees assigned trips, PATIENT sees their own history."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data[0] && body.data[0].id) {",
+                  "  pm.collectionVariables.set('tripId', body.data[0] && body.data[0].id);",
+                  "  console.log('saved tripId = ' + body.data[0] && body.data[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Trip by Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trips",
+                "{{tripId}}"
+              ]
+            },
+            "description": "The assigned driver, the patient on the trip, or an admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Status — En Route to Pickup",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trips",
+                "{{tripId}}",
+                "status"
+              ]
+            },
+            "description": "DRIVER. First legal move out of DISPATCHED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"EN_ROUTE_TO_PICKUP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Status — Patient Picked Up",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trips",
+                "{{tripId}}",
+                "status"
+              ]
+            },
+            "description": "DRIVER. Stamps pickedUpAt.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PATIENT_PICKED_UP\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Select Destination Hospital",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}/hospital",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trips",
+                "{{tripId}}",
+                "hospital"
+              ]
+            },
+            "description": "DRIVER or ADMIN. Allowed any time before arrival, and required before heading to the hospital.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hospitalId\": \"{{hospitalId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Status — En Route to Hospital",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trips",
+                "{{tripId}}",
+                "status"
+              ]
+            },
+            "description": "DRIVER. Rejected with a 400 if no hospital has been selected yet.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"EN_ROUTE_TO_HOSPITAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Status — Arrived at Hospital",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trips",
+                "{{tripId}}",
+                "status"
+              ]
+            },
+            "description": "DRIVER. Stamps arrivedAt. The only state a trip can be completed from.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ARRIVED_AT_HOSPITAL\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Status — Cancel Trip",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trips",
+                "{{tripId}}",
+                "status"
+              ]
+            },
+            "description": "DRIVER or ADMIN. Hands the ambulance and driver back and cancels the request. A reason is required.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CANCELLED\",\n  \"cancelReason\": \"Patient no longer at the pickup address\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Trip",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/trips/{{tripId}}/complete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "trips",
+                "{{tripId}}",
+                "complete"
+              ]
+            },
+            "description": "DRIVER. Only from ARRIVED_AT_HOSPITAL. One transaction: fare is baseFare + perKmRate x distanceKm, ambulance freed, driver back on duty, request COMPLETED, and a PENDING payment raised.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"distanceKm\": 12.35\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "description": "SSLCommerz checkout and the gateway callbacks. The callbacks are public and posted as form data.",
+      "item": [
+        {
+          "name": "Init Payment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/init/{{tripId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "init",
+                "{{tripId}}"
+              ]
+            },
+            "description": "PATIENT only, on their own completed and unpaid trip. Issues a fresh transaction id, stores it before redirecting, and returns gatewayPageURL. Open that URL in a browser to pay."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (body.data && body.data.transactionId) {",
+                  "  pm.collectionVariables.set('transactionId', body.data.transactionId);",
+                  "  console.log('saved transactionId = ' + body.data.transactionId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Callback — Success",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/success",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "success"
+              ]
+            },
+            "description": "Public, posted by SSLCommerz as form data. The val_id is re-validated server side and the status, transaction id, currency and amount are all checked against the gateway before the bill is marked PAID. A repeat callback is a no-op.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "tran_id",
+                  "value": "{{transactionId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "val_id",
+                  "value": "val-id-from-the-gateway",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "VALID",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Callback — Fail",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/fail",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "fail"
+              ]
+            },
+            "description": "Public. Marks a retriable bill FAILED. A PAID bill is never walked back.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "tran_id",
+                  "value": "{{transactionId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "FAILED",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Callback — Cancel",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "cancel"
+              ]
+            },
+            "description": "Public. Marks a retriable bill CANCELLED.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "tran_id",
+                  "value": "{{transactionId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "CANCELLED",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Callback — IPN",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payments/ipn",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payments",
+                "ipn"
+              ]
+            },
+            "description": "Server to server, retried by SSLCommerz until it sees a 200. Settles the bill on its own when the browser redirect never arrives, and is idempotent with the success callback.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "tran_id",
+                  "value": "{{transactionId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "val_id",
+                  "value": "val-id-from-the-gateway",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "VALID",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Utility",
+      "description": "Health check.",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Public. Reports service name, environment and uptime.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

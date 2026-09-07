@@ -33,14 +33,11 @@ export const config = {
     refreshSecret: requiredEnv('JWT_REFRESH_SECRET'),
     refreshExpiresIn: optionalEnv('JWT_REFRESH_EXPIRES_IN', '30d'),
   },
-  // Optional so the API still boots without GCP credentials; the routes report 503 instead.
   google: {
     clientId: optionalEnv('GOOGLE_CLIENT_ID', ''),
     clientSecret: optionalEnv('GOOGLE_CLIENT_SECRET', ''),
     callbackUrl: optionalEnv('GOOGLE_CALLBACK_URL', ''),
   },
-  // Store keys optional at boot like Google's; the payment routes answer 503 while
-  // they are missing. Hosts default to the sandbox, never live.
   ssl: {
     storeId: optionalEnv('SSL_STORE_ID', ''),
     storePass: optionalEnv('SSL_STORE_PASS', ''),

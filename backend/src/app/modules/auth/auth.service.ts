@@ -27,7 +27,6 @@ const register = async (payload: TRegisterPayload) => {
 
   const password = await bcrypt.hash(payload.password, config.bcryptSaltRounds);
 
-  // Public registration always creates a patient; drivers and admins are provisioned by an admin.
   return prisma.user.create({
     data: {
       name: payload.name,
@@ -62,7 +61,6 @@ const issueTokens = (user: Pick<User, 'id' | 'email' | 'role'>): TAuthTokens => 
 const login = async (payload: TLoginPayload) => {
   const user = await prisma.user.findUnique({ where: { email: payload.email } });
 
-  // One message for every credential failure so the endpoint cannot be used to discover emails.
   if (!user || user.isDeleted || !user.password) {
     throw new AppError(401, 'Invalid email or password');
   }
@@ -139,7 +137,6 @@ const buildGoogleAuthUrl = (state: string): string =>
 const googleCallback = async (code: string) => {
   const client = getGoogleClient();
 
-  // Gaxios throws its own error shape on a bad or replayed code; keep it off the 500 path.
   const exchanged = await client.getToken(code).catch(() => {
     throw new AppError(401, 'Google rejected the authorization code');
   });
@@ -175,7 +172,6 @@ const googleCallback = async (code: string) => {
       throw new AppError(403, 'Your account has been blocked');
     }
 
-    // Link the Google identity to the existing email rather than creating a second account.
     const user = existing.googleId
       ? existing
       : await prisma.user.update({

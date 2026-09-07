@@ -46,7 +46,6 @@ const loadTripOrFail = async (id: string) => {
 
 type TLoadedTrip = Awaited<ReturnType<typeof loadTripOrFail>>;
 
-// Reading a trip is open to the two people on it plus any admin.
 const assertCanView = (user: TJwtPayload, trip: TLoadedTrip) => {
   const isParticipant =
     user.userId === trip.driver.userId || user.userId === trip.request.patientId;
@@ -56,7 +55,6 @@ const assertCanView = (user: TJwtPayload, trip: TLoadedTrip) => {
   }
 };
 
-// Driving the trip forward is the assigned driver's job; an admin can step in.
 const assertCanDrive = (user: TJwtPayload, trip: TLoadedTrip) => {
   if (user.role !== Role.ADMIN && user.userId !== trip.driver.userId) {
     throw new AppError(403, 'You are not the driver assigned to this trip');
@@ -98,7 +96,6 @@ const getAll = async (filters: TTripFilters, options: TPaginationOptions) => {
   return { data, meta: buildMeta(page, limit, total) };
 };
 
-// The same endpoint means "my assignments" to a driver and "my history" to a patient.
 const getMyTrips = async (
   user: TJwtPayload,
   filters: TTripFilters,
@@ -134,8 +131,6 @@ const getById = async (user: TJwtPayload, id: string) => {
   return prisma.trip.findUniqueOrThrow({ where: { id }, select: tripDetailSelect });
 };
 
-// Cancelling has to hand the ambulance, the driver and the request back, or the
-// vehicle stays locked to a trip nobody is driving.
 const cancelTrip = async (trip: TLoadedTrip, cancelReason: string) =>
   prisma.$transaction(async (tx) => {
     const cancelled = await tx.trip.updateMany({
@@ -188,7 +183,6 @@ const updateStatus = async (user: TJwtPayload, id: string, payload: TUpdateTripS
     return cancelTrip(trip, payload.cancelReason as string);
   }
 
-  // You cannot drive to a hospital nobody has chosen yet.
   if (payload.status === TripStatus.EN_ROUTE_TO_HOSPITAL && !trip.hospitalId) {
     throw new AppError(400, 'Select a destination hospital before heading there');
   }
@@ -199,7 +193,6 @@ const updateStatus = async (user: TJwtPayload, id: string, payload: TUpdateTripS
     [TripStatus.ARRIVED_AT_HOSPITAL]: { arrivedAt: now },
   };
 
-  // Guarding on the status we read keeps two concurrent updates from both applying.
   const moved = await prisma.trip.updateMany({
     where: { id, status: trip.status },
     data: { status: payload.status, ...(stamps[payload.status] ?? {}) },
@@ -236,8 +229,6 @@ const selectHospital = async (user: TJwtPayload, id: string, hospitalId: string)
   });
 };
 
-// Decimal end to end — a float drifts a few poisha per fare and never reconciles
-// against what the gateway charged.
 const calculateFare = (
   baseFare: Prisma.Decimal,
   perKmRate: Prisma.Decimal,
@@ -262,14 +253,10 @@ const complete = async (user: TJwtPayload, id: string, payload: TCompleteTripPay
     select: { baseFare: true, perKmRate: true },
   });
 
-  // Rounded to the 2 decimals the column stores, so the saved distance and the
-  // distance the fare was built from cannot disagree.
   const distanceKm = new Prisma.Decimal(payload.distanceKm).toDecimalPlaces(2);
   const fare = calculateFare(ambulance.baseFare, ambulance.perKmRate, distanceKm);
 
   return prisma.$transaction(async (tx) => {
-    // Guarded on the status just read: a second tap finds zero rows and rolls back
-    // rather than raising a second bill for the same trip.
     const completed = await tx.trip.updateMany({
       where: { id, status: trip.status },
       data: { status: TripStatus.COMPLETED, distanceKm, fare, completedAt: new Date() },
@@ -294,8 +281,6 @@ const complete = async (user: TJwtPayload, id: string, payload: TCompleteTripPay
       data: { status: RequestStatus.COMPLETED },
     });
 
-    // Raised now rather than at checkout, so an unpaid trip is a row an admin can
-    // chase instead of an intention nobody recorded.
     const payment = await tx.payment.create({
       data: {
         tripId: trip.id,

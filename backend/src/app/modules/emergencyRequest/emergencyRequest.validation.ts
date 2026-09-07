@@ -23,7 +23,6 @@ const requestedAmbulanceType = z.enum(
   'Requested ambulance type must be BASIC, AC, ICU or FREEZER',
 );
 
-// A single coordinate is useless to a dispatcher, so both must arrive together.
 const bothCoordinatesOrNeither = (body: { pickupLat?: number; pickupLng?: number }) =>
   (body.pickupLat === undefined) === (body.pickupLng === undefined);
 

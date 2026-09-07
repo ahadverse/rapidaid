@@ -4,7 +4,6 @@ export const PAYMENT_CURRENCY = 'BDT';
 
 export const SSL_REQUEST_TIMEOUT_MS = 15000;
 
-// PAID is terminal — a second attempt on a settled trip is a double charge.
 export const RETRIABLE_PAYMENT_STATUSES: PaymentStatus[] = [
   PaymentStatus.PENDING,
   PaymentStatus.FAILED,
@@ -12,6 +11,8 @@ export const RETRIABLE_PAYMENT_STATUSES: PaymentStatus[] = [
 ];
 
 export const DEFAULT_BILLING_CITY = 'Dhaka';
+
+export const VALID_GATEWAY_STATUSES = ['VALID', 'VALIDATED'];
 
 export const paymentSelect = {
   id: true,

@@ -14,7 +14,6 @@ const updateStatus = z.object({
         .max(300, 'Cancel reason is too long')
         .optional(),
     })
-    // A cancelled trip is the one transition that has to explain itself.
     .refine((body) => body.status !== TripStatus.CANCELLED || Boolean(body.cancelReason), {
       message: 'A cancel reason is required when cancelling a trip',
       path: ['cancelReason'],
@@ -38,7 +37,6 @@ const complete = z.object({
   }),
 });
 
-// Accepts a plain date or a full timestamp, so ?from=2026-09-01 works as expected.
 const dateBound = (label: string) =>
   z
     .string()

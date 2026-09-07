@@ -7,6 +7,13 @@ import { handlePrismaKnownError, handlePrismaValidationError } from '../errors/h
 import handleZodError from '../errors/handleZodError';
 import { TErrorSource } from '../interface/error';
 
+type TBodyParserError = Error & { type: string; status?: number };
+
+const isBodyParserError = (err: unknown): err is TBodyParserError =>
+  err instanceof Error &&
+  typeof (err as TBodyParserError).type === 'string' &&
+  (err as TBodyParserError).type.startsWith('entity.');
+
 const globalErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   let statusCode = 500;
   let message = 'Something went wrong';
@@ -22,8 +29,14 @@ const globalErrorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     statusCode = err.statusCode;
     message = err.message;
     errorSources = [{ path: '', message: err.message }];
+  } else if (isBodyParserError(err)) {
+    statusCode = err.status ?? 400;
+    message =
+      err.type === 'entity.too.large'
+        ? 'Request body is too large'
+        : 'Request body is not valid JSON';
+    errorSources = [{ path: 'body', message }];
   } else if (err instanceof Error) {
-    // jsonwebtoken is matched by name so this handler stays free of an auth dependency.
     if (err.name === 'JsonWebTokenError') {
       statusCode = 401;
       message = 'Invalid token';

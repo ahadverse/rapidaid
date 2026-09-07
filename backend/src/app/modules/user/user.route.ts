@@ -15,7 +15,6 @@ router.patch(
   UserController.updateMe,
 );
 
-// '/me' is declared first so it is never captured by the '/:id' parameter route.
 router.get(
   '/',
   auth(Role.ADMIN),

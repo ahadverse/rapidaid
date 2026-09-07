@@ -6,7 +6,6 @@ import prisma from '../lib/prisma';
 import catchAsync from '../utils/catchAsync';
 import { verifyToken } from '../utils/jwt';
 
-// Called with no roles the middleware only authenticates; with roles it also authorises.
 const auth = (...roles: Role[]): RequestHandler =>
   catchAsync(async (req: Request, _res: Response, next: NextFunction) => {
     const header = req.headers.authorization;
@@ -17,8 +16,6 @@ const auth = (...roles: Role[]): RequestHandler =>
 
     const decoded = verifyToken(header.slice(7).trim(), config.jwt.accessSecret);
 
-    // Role and status come from the database, not the token, so a block or a role
-    // change takes effect immediately instead of when the old token expires.
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: { id: true, email: true, role: true, status: true, isDeleted: true },

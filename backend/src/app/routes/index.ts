@@ -1,5 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { config } from '../../config';
+import { DocsRoutes } from '../docs/docs.route';
 import { AmbulanceRoutes } from '../modules/ambulance/ambulance.route';
 import { AuthRoutes } from '../modules/auth/auth.route';
 import { DriverRoutes } from '../modules/driver/driver.route';
@@ -26,6 +27,7 @@ const moduleRoutes: TModuleRoute[] = [
   { path: '/emergency-requests', route: EmergencyRequestRoutes },
   { path: '/trips', route: TripRoutes },
   { path: '/payments', route: PaymentRoutes },
+  { path: '/docs', route: DocsRoutes },
 ];
 
 moduleRoutes.forEach(({ path, route }) => {

@@ -16,7 +16,6 @@ export type TPaginationResult = {
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
 
-// Caps limit so a client cannot ask for the whole table in one request.
 export const calculatePagination = (options: TPaginationOptions): TPaginationResult => {
   const page = Math.max(Math.trunc(Number(options.page)) || 1, 1);
   const requested = Math.trunc(Number(options.limit)) || DEFAULT_LIMIT;

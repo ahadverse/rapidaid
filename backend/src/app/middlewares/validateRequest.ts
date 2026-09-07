@@ -8,8 +8,6 @@ type TValidated = {
   query?: unknown;
 };
 
-// Schemas wrap their fields in body/params/query, so only the parts a schema
-// declares get written back — the rest of the request is left untouched.
 const validateRequest = (schema: ZodType): RequestHandler =>
   catchAsync(async (req: Request, _res: Response, next: NextFunction) => {
     const parsed = (await schema.parseAsync({

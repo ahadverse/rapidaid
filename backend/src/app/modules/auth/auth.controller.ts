@@ -13,8 +13,6 @@ import {
 } from './auth.constant';
 import { AuthService } from './auth.service';
 
-// sameSite none is required once the API and the client sit on different domains,
-// and browsers only accept it together with secure.
 const setRefreshCookie = (res: Response, token: string): void => {
   res.cookie(REFRESH_COOKIE_NAME, token, {
     httpOnly: true,
@@ -83,7 +81,6 @@ const logout = catchAsync(async (_req: Request, res: Response) => {
 });
 
 const googleLogin = catchAsync(async (_req: Request, res: Response) => {
-  // Random state, echoed back by Google and compared against this cookie, blocks CSRF on the callback.
   const state = randomBytes(16).toString('hex');
 
   res.cookie(OAUTH_STATE_COOKIE_NAME, state, {

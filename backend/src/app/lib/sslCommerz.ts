@@ -24,9 +24,45 @@ type TSslInitResponse = {
   GatewayPageURL?: string;
 };
 
+export type TSslValidation = {
+  status?: string;
+  tran_id?: string;
+  val_id?: string;
+  amount?: string;
+  currency?: string;
+  bank_tran_id?: string;
+  card_type?: string;
+  tran_date?: string;
+  risk_level?: string;
+  error?: string;
+};
+
 export const assertSslCommerzConfigured = (): void => {
   if (!config.ssl.storeId || !config.ssl.storePass) {
     throw new AppError(503, 'Online payment is not configured on this server');
+  }
+};
+
+const requestJson = async (url: string, init?: RequestInit): Promise<unknown> => {
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      ...init,
+      signal: AbortSignal.timeout(SSL_REQUEST_TIMEOUT_MS),
+    });
+  } catch {
+    throw new AppError(502, 'Could not reach the payment gateway, please try again');
+  }
+
+  if (!response.ok) {
+    throw new AppError(502, `The payment gateway returned an error (${response.status})`);
+  }
+
+  try {
+    return await response.json();
+  } catch {
+    throw new AppError(502, 'The payment gateway sent a response we could not read');
   }
 };
 
@@ -54,37 +90,15 @@ const buildInitBody = (input: TSslInitInput): URLSearchParams =>
     cus_country: 'Bangladesh',
   });
 
-const postForm = async (url: string, body: URLSearchParams): Promise<unknown> => {
-  let response: Response;
-
-  try {
-    response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body,
-      signal: AbortSignal.timeout(SSL_REQUEST_TIMEOUT_MS),
-    });
-  } catch {
-    throw new AppError(502, 'Could not reach the payment gateway, please try again');
-  }
-
-  if (!response.ok) {
-    throw new AppError(502, `The payment gateway returned an error (${response.status})`);
-  }
-
-  try {
-    return await response.json();
-  } catch {
-    throw new AppError(502, 'The payment gateway sent a response we could not read');
-  }
-};
-
 export const initPaymentSession = async (input: TSslInitInput) => {
   assertSslCommerzConfigured();
 
-  const data = (await postForm(config.ssl.paymentApi, buildInitBody(input))) as TSslInitResponse;
+  const data = (await requestJson(config.ssl.paymentApi, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: buildInitBody(input),
+  })) as TSslInitResponse;
 
-  // A refusal still arrives as HTTP 200, so the body decides, not the status code.
   if (data.status !== 'SUCCESS' || !data.GatewayPageURL) {
     throw new AppError(
       502,
@@ -96,4 +110,16 @@ export const initPaymentSession = async (input: TSslInitInput) => {
     gatewayPageURL: data.GatewayPageURL,
     sessionKey: data.sessionkey ?? null,
   };
+};
+
+export const validatePayment = async (valId: string): Promise<TSslValidation> => {
+  assertSslCommerzConfigured();
+
+  const url = new URL(config.ssl.validationApi);
+  url.searchParams.set('val_id', valId);
+  url.searchParams.set('store_id', config.ssl.storeId);
+  url.searchParams.set('store_passwd', config.ssl.storePass);
+  url.searchParams.set('format', 'json');
+
+  return (await requestJson(url.toString())) as TSslValidation;
 };

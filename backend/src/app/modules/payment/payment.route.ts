@@ -14,4 +14,9 @@ router.post(
   PaymentController.init,
 );
 
+router.post('/success', validateRequest(PaymentValidation.callback), PaymentController.success);
+router.post('/fail', validateRequest(PaymentValidation.callback), PaymentController.fail);
+router.post('/cancel', validateRequest(PaymentValidation.callback), PaymentController.cancel);
+router.post('/ipn', validateRequest(PaymentValidation.callback), PaymentController.ipn);
+
 export const PaymentRoutes = router;

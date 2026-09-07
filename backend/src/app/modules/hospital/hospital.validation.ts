@@ -1,7 +1,6 @@
 import { z } from 'zod';
 import { HOSPITAL_PHONE_REGEX } from './hospital.constant';
 
-// Specializations are stored uppercase so filtering by one is an exact array match.
 const specializations = z
   .array(z.string().trim().toUpperCase().min(2, 'Specialization is too short'))
   .min(1, 'At least one specialization is required');

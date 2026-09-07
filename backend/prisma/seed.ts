@@ -107,7 +107,6 @@ async function seedAdmin(passwordHash: string) {
 }
 
 async function seedHospitals() {
-  // Hospital has no natural unique key, so match on name + area before creating.
   for (const hospital of hospitals) {
     const existing = await prisma.hospital.findFirst({
       where: { name: hospital.name, area: hospital.area },

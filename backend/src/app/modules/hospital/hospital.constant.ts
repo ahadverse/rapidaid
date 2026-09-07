@@ -2,8 +2,6 @@ export const hospitalSortableFields = ['name', 'area', 'availableBeds', 'created
 
 export const hospitalFilterableFields = ['searchTerm', 'area', 'specialization'] as const;
 
-// Hospital landlines and mobiles both appear here, so this is looser than the
-// mobile-only rule used for user accounts.
 export const HOSPITAL_PHONE_REGEX = /^\+?[\d\s-]{6,20}$/;
 
 export const hospitalListSelect = {
