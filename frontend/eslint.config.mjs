@@ -19,7 +19,6 @@ const eslintConfig = defineConfig([
     },
   },
   prettier,
-  // globalIgnores replaces eslint-config-next's own ignores, so they are restated here.
   globalIgnores(['.next/**', 'out/**', 'build/**', 'next-env.d.ts']),
 ]);
 
