@@ -338,6 +338,15 @@ Open `http://localhost:5000/api/v1/docs`, log in as the admin, paste the `access
 | `npm run seed` / `npm run seed:prod` | Seed demo data |
 | `npm run lint` / `npm run format` | ESLint / Prettier |
 
+### Frontend environment
+
+Create `frontend/.env.local` (git-ignored). The app throws at boot if either variable is missing.
+
+| Variable | Example | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_API_URL` | `https://rapidaid-api-ivyf.onrender.com/api/v1` | Base URL of the API, including `/api/v1` |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Public origin of the frontend itself |
+
 ---
 
 ## 🚀 Deployment (Render)
