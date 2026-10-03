@@ -5,3 +5,9 @@ export const publicNavLinks = [
   { href: '/faq', label: 'FAQ' },
   { href: '/contact', label: 'Contact' },
 ] as const;
+
+export const roleHome = {
+  PATIENT: '/dashboard',
+  DRIVER: '/driver',
+  ADMIN: '/admin',
+} as const;
