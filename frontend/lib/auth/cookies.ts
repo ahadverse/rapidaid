@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { secondsUntilExpiry } from './token';
 
 export const ACCESS_COOKIE = 'access_token';
 export const REFRESH_COOKIE = 'refresh_token';
@@ -12,28 +13,31 @@ const baseOptions = {
   path: '/',
 } as const;
 
-function secondsUntilExpiry(token: string): number {
-  try {
-    const { exp } = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString()) as {
-      exp?: number;
-    };
+export function sessionCookieEntries(accessToken: string, refreshToken?: string) {
+  const entries = [
+    {
+      name: ACCESS_COOKIE,
+      value: accessToken,
+      options: { ...baseOptions, maxAge: secondsUntilExpiry(accessToken) },
+    },
+  ];
 
-    return exp ? Math.max(exp - Math.floor(Date.now() / 1000), 0) : 0;
-  } catch {
-    return 0;
+  if (refreshToken) {
+    entries.push({
+      name: REFRESH_COOKIE,
+      value: refreshToken,
+      options: { ...baseOptions, maxAge: REFRESH_MAX_AGE_SECONDS },
+    });
   }
+
+  return entries;
 }
 
 export async function setSessionCookies(accessToken: string, refreshToken?: string) {
   const store = await cookies();
 
-  store.set(ACCESS_COOKIE, accessToken, {
-    ...baseOptions,
-    maxAge: secondsUntilExpiry(accessToken),
-  });
-
-  if (refreshToken) {
-    store.set(REFRESH_COOKIE, refreshToken, { ...baseOptions, maxAge: REFRESH_MAX_AGE_SECONDS });
+  for (const { name, value, options } of sessionCookieEntries(accessToken, refreshToken)) {
+    store.set(name, value, options);
   }
 }
 

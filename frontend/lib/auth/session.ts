@@ -1,28 +1,7 @@
 import { cookies } from 'next/headers';
 import type { SessionUser } from '@/hooks/use-auth';
-import { ROLES } from '@/lib/api/types';
 import { ACCESS_COOKIE } from './cookies';
-
-type AccessPayload = {
-  userId: string;
-  email: string;
-  role: SessionUser['role'];
-  exp?: number;
-};
-
-export function decodeAccessToken(token: string): AccessPayload | null {
-  try {
-    const payload = JSON.parse(
-      Buffer.from(token.split('.')[1], 'base64url').toString(),
-    ) as AccessPayload;
-
-    const expired = payload.exp !== undefined && payload.exp * 1000 <= Date.now();
-
-    return expired || !ROLES.includes(payload.role) ? null : payload;
-  } catch {
-    return null;
-  }
-}
+import { decodeAccessToken } from './token';
 
 // Decoding only: the backend verifies the signature on every API call, and the frontend
 // holds no signing secret.
