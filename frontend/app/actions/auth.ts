@@ -12,7 +12,12 @@ import {
   setSessionCookies,
 } from '@/lib/auth/cookies';
 import { roleHome } from '@/lib/navigation';
-import { loginSchema, type LoginValues } from '@/lib/validation/auth';
+import {
+  loginSchema,
+  registerSchema,
+  type LoginValues,
+  type RegisterValues,
+} from '@/lib/validation/auth';
 
 export type ActionState = {
   error?: string;
@@ -20,6 +25,24 @@ export type ActionState = {
 };
 
 type LoginData = { accessToken: string; user: { role: Role } };
+
+async function startSession(credentials: LoginValues): Promise<Role> {
+  const { data, refreshToken } = await authRequest<LoginData>('/auth/login', {
+    body: credentials,
+  });
+
+  await setSessionCookies(data.accessToken, refreshToken);
+
+  return data.user.role;
+}
+
+function toActionState(error: unknown): ActionState {
+  if (isApiError(error)) {
+    return { error: error.message, fieldErrors: error.fieldErrors() };
+  }
+
+  return { error: 'Something went wrong. Please try again.' };
+}
 
 export async function loginAction(values: LoginValues): Promise<ActionState> {
   const parsed = loginSchema.safeParse(values);
@@ -31,21 +54,29 @@ export async function loginAction(values: LoginValues): Promise<ActionState> {
   let role: Role;
 
   try {
-    const { data, refreshToken } = await authRequest<LoginData>('/auth/login', {
-      body: parsed.data,
-    });
-
-    await setSessionCookies(data.accessToken, refreshToken);
-    role = data.user.role;
+    role = await startSession(parsed.data);
   } catch (error) {
-    if (isApiError(error)) {
-      return { error: error.message, fieldErrors: error.fieldErrors() };
-    }
-
-    return { error: 'Something went wrong. Please try again.' };
+    return toActionState(error);
   }
 
   redirect(roleHome[role]);
+}
+
+export async function registerAction(values: RegisterValues): Promise<ActionState> {
+  const parsed = registerSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Please check the form' };
+  }
+
+  try {
+    await authRequest('/auth/register', { body: parsed.data });
+    await startSession({ email: parsed.data.email, password: parsed.data.password });
+  } catch (error) {
+    return toActionState(error);
+  }
+
+  redirect(roleHome.PATIENT);
 }
 
 export async function refreshSessionAction(): Promise<boolean> {
