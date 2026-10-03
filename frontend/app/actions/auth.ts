@@ -62,6 +62,28 @@ export async function loginAction(values: LoginValues): Promise<ActionState> {
   redirect(roleHome[role]);
 }
 
+const demoAccounts = {
+  ADMIN: { email: 'admin@rapidaid.com', password: 'Admin@RapidAid2026' },
+  PATIENT: { email: 'patient@rapidaid.com', password: 'Demo@RapidAid2026' },
+  DRIVER: { email: 'driver1@rapidaid.com', password: 'Demo@RapidAid2026' },
+} as const;
+
+export async function demoLoginAction(role: Role): Promise<ActionState> {
+  const credentials = demoAccounts[role];
+
+  if (!credentials) {
+    return { error: 'Unknown demo account' };
+  }
+
+  try {
+    await startSession(credentials);
+  } catch (error) {
+    return toActionState(error);
+  }
+
+  redirect(roleHome[role]);
+}
+
 export async function registerAction(values: RegisterValues): Promise<ActionState> {
   const parsed = registerSchema.safeParse(values);
 

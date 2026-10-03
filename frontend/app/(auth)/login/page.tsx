@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { DemoLogin } from '@/components/auth/demo-login';
 import { LoginForm } from '@/components/auth/login-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -17,6 +18,7 @@ export default function LoginPage() {
       </CardHeader>
       <CardContent className="space-y-6">
         <LoginForm />
+        <DemoLogin />
         <p className="text-center text-sm text-muted-foreground">
           New to RapidAid?{' '}
           <Link href="/register" className="font-medium text-primary hover:underline">
