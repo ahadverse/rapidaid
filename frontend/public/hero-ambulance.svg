@@ -1,36 +1,99 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Ambulance driving along a road toward a hospital">
-  <rect width="640" height="400" rx="24" fill="#fef2f2"/>
-  <circle cx="500" cy="90" r="46" fill="#fecaca"/>
-  <rect x="430" y="120" width="170" height="190" rx="8" fill="#ffffff" stroke="#fca5a5" stroke-width="3"/>
-  <rect x="505" y="140" width="20" height="60" rx="4" fill="#dc2626"/>
-  <rect x="485" y="160" width="60" height="20" rx="4" fill="#dc2626"/>
-  <rect x="452" y="226" width="26" height="34" rx="3" fill="#fecaca"/>
-  <rect x="552" y="226" width="26" height="34" rx="3" fill="#fecaca"/>
-  <rect x="496" y="250" width="38" height="60" rx="3" fill="#fca5a5"/>
-  <rect x="0" y="310" width="640" height="90" fill="#374151"/>
-  <g fill="#f9fafb">
-    <rect x="30" y="352" width="60" height="6" rx="3"/>
-    <rect x="150" y="352" width="60" height="6" rx="3"/>
-    <rect x="270" y="352" width="60" height="6" rx="3"/>
-    <rect x="390" y="352" width="60" height="6" rx="3"/>
-    <rect x="510" y="352" width="60" height="6" rx="3"/>
-  </g>
-  <g>
-    <rect x="70" y="204" width="230" height="100" rx="14" fill="#ffffff" stroke="#9ca3af" stroke-width="3"/>
-    <path d="M300 230h50l36 34v40H300z" fill="#ffffff" stroke="#9ca3af" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M312 238h34l24 26h-58z" fill="#bfdbfe"/>
-    <rect x="70" y="262" width="316" height="14" fill="#dc2626"/>
-    <rect x="160" y="222" width="14" height="40" rx="3" fill="#dc2626"/>
-    <rect x="147" y="235" width="40" height="14" rx="3" fill="#dc2626"/>
-    <rect x="210" y="190" width="46" height="14" rx="7" fill="#ef4444"/>
-    <circle cx="140" cy="308" r="26" fill="#111827"/>
-    <circle cx="140" cy="308" r="11" fill="#d1d5db"/>
-    <circle cx="332" cy="308" r="26" fill="#111827"/>
-    <circle cx="332" cy="308" r="11" fill="#d1d5db"/>
-  </g>
-  <g stroke="#ef4444" stroke-width="5" stroke-linecap="round" fill="none">
-    <path d="M200 164l-12-14"/>
-    <path d="M233 158v-20"/>
-    <path d="M266 164l12-14"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 440" role="img" aria-label="Ambulance driving along a road toward a hospital">
+  <style>
+    .cloud { animation: drift 24s linear infinite; }
+    .cloud.slow { animation-duration: 36s; animation-delay: -12s; }
+    .road-dash { animation: road 1.2s linear infinite; }
+    .bob { animation: bob 0.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .siren-a { animation: flash 0.8s steps(1) infinite; }
+    .siren-b { animation: flash 0.8s steps(1) 0.4s infinite; }
+    .glow { animation: glow 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .ring { animation: ring 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+    .ring.r2 { animation-delay: 1.2s; }
+    .wheel { animation: spin 0.6s linear infinite; transform-box: fill-box; transform-origin: center; }
+    .beam { animation: beam 0.8s steps(1) infinite; }
+    @keyframes drift { from { transform: translateX(-140px); } to { transform: translateX(760px); } }
+    @keyframes road { to { transform: translateX(-120px); } }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+    @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.15; } }
+    @keyframes glow { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+    @keyframes ring { 0% { opacity: 0.7; transform: scale(0.4); } 100% { opacity: 0; transform: scale(1.6); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes beam { 0% { opacity: 0.55; } 50% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fee2e2"/>
+      <stop offset="1" stop-color="#fff7f7"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4b5563"/>
+      <stop offset="1" stop-color="#1f2937"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fca5a5" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#fca5a5" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="frame"><rect width="640" height="440" rx="28"/></clipPath>
+  </defs>
+  <g clip-path="url(#frame)">
+    <rect width="640" height="440" fill="url(#sky)"/>
+    <circle cx="520" cy="96" r="120" fill="url(#sun)"/>
+    <g fill="#ffffff" opacity="0.9">
+      <g class="cloud"><ellipse cx="60" cy="70" rx="46" ry="14"/><ellipse cx="86" cy="60" rx="28" ry="12"/></g>
+      <g class="cloud slow"><ellipse cx="60" cy="130" rx="38" ry="11"/><ellipse cx="80" cy="122" rx="22" ry="10"/></g>
+    </g>
+    <g fill="#fecaca" opacity="0.7">
+      <rect x="20" y="230" width="46" height="110"/>
+      <rect x="76" y="200" width="36" height="140"/>
+      <rect x="124" y="250" width="52" height="90"/>
+    </g>
+    <g>
+      <circle class="ring" cx="520" cy="170" r="70" fill="none" stroke="#ef4444" stroke-width="3"/>
+      <circle class="ring r2" cx="520" cy="170" r="70" fill="none" stroke="#ef4444" stroke-width="3"/>
+      <rect x="440" y="130" width="160" height="210" rx="10" fill="#ffffff" stroke="#fca5a5" stroke-width="3"/>
+      <g class="glow">
+        <rect x="510" y="150" width="20" height="62" rx="4" fill="#dc2626"/>
+        <rect x="489" y="171" width="62" height="20" rx="4" fill="#dc2626"/>
+      </g>
+      <g fill="#fee2e2">
+        <rect x="458" y="232" width="26" height="30" rx="3"/>
+        <rect x="556" y="232" width="26" height="30" rx="3"/>
+        <rect x="458" y="278" width="26" height="30" rx="3"/>
+        <rect x="556" y="278" width="26" height="30" rx="3"/>
+      </g>
+      <rect x="502" y="268" width="36" height="72" rx="3" fill="#fca5a5"/>
+    </g>
+    <rect x="0" y="340" width="640" height="100" fill="url(#road)"/>
+    <rect x="0" y="340" width="640" height="6" fill="#9ca3af"/>
+    <g fill="#f9fafb">
+      <g class="road-dash">
+        <rect x="20" y="392" width="64" height="7" rx="3.5"/>
+        <rect x="140" y="392" width="64" height="7" rx="3.5"/>
+        <rect x="260" y="392" width="64" height="7" rx="3.5"/>
+        <rect x="380" y="392" width="64" height="7" rx="3.5"/>
+        <rect x="500" y="392" width="64" height="7" rx="3.5"/>
+        <rect x="620" y="392" width="64" height="7" rx="3.5"/>
+      </g>
+    </g>
+    <g class="bob">
+      <polygon class="beam" points="372,300 640,262 640,340 372,326" fill="#fde68a"/>
+      <rect x="60" y="226" width="240" height="108" rx="14" fill="#ffffff" stroke="#9ca3af" stroke-width="3"/>
+      <path d="M300 254h52l38 36v44H300z" fill="#ffffff" stroke="#9ca3af" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M312 262h36l26 28h-62z" fill="#bfdbfe"/>
+      <rect x="60" y="288" width="330" height="14" fill="#dc2626"/>
+      <rect x="152" y="244" width="14" height="40" rx="3" fill="#dc2626"/>
+      <rect x="139" y="257" width="40" height="14" rx="3" fill="#dc2626"/>
+      <rect x="196" y="212" width="58" height="14" rx="7" fill="#374151"/>
+      <rect class="siren-a" x="200" y="206" width="22" height="12" rx="6" fill="#ef4444"/>
+      <rect class="siren-b" x="228" y="206" width="22" height="12" rx="6" fill="#3b82f6"/>
+      <circle cx="384" cy="318" r="6" fill="#fde047"/>
+    </g>
+    <g>
+      <circle cx="132" cy="336" r="27" fill="#111827"/>
+      <g class="wheel"><circle cx="132" cy="336" r="12" fill="#d1d5db"/><rect x="130" y="326" width="4" height="20" fill="#6b7280"/><rect x="122" y="334" width="20" height="4" fill="#6b7280"/></g>
+      <circle cx="334" cy="336" r="27" fill="#111827"/>
+      <g class="wheel"><circle cx="334" cy="336" r="12" fill="#d1d5db"/><rect x="332" y="326" width="4" height="20" fill="#6b7280"/><rect x="324" y="334" width="20" height="4" fill="#6b7280"/></g>
+    </g>
   </g>
 </svg>
