@@ -2,7 +2,7 @@ import type { Meta } from './types';
 
 export type ActionResult<T = void> =
   | { ok: true; data: T; meta?: Meta }
-  | { ok: false; error: string; fieldErrors?: Record<string, string> };
+  | { ok: false; error: string; status?: number; fieldErrors?: Record<string, string> };
 
 export type ListResult<T> = { items: T[]; meta: Meta | undefined };
 

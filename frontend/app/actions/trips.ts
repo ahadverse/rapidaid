@@ -12,3 +12,7 @@ export async function listMyTripsAction(query: {
     query: { ...query, sortBy: 'createdAt', sortOrder: 'desc' },
   });
 }
+
+export async function getTripAction(id: string): Promise<ActionResult<Trip>> {
+  return authedAction<Trip>(`/trips/${encodeURIComponent(id)}`);
+}

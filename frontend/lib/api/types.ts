@@ -101,12 +101,30 @@ export type Trip = {
   distanceKm: number | string | null;
   fare: number | string | null;
   cancelReason: string | null;
-  dispatchedAt: string | null;
+  dispatchedAt: string;
   pickedUpAt: string | null;
   arrivedAt: string | null;
   completedAt: string | null;
   createdAt: string;
-  ambulance: { id: string; regNumber: string; type: AmbulanceType; stationArea: string };
-  hospital: { id: string; name: string; area: string } | null;
-  request: { id: string; pickupAddress: string; priority: Priority; status: RequestStatus };
+  ambulance: {
+    id: string;
+    regNumber: string;
+    type: AmbulanceType;
+    status: AmbulanceStatus;
+    stationArea: string;
+  };
+  driver: {
+    id: string;
+    licenseNumber: string;
+    user: { id: string; name: string; phone: string | null };
+  };
+  hospital: { id: string; name: string; area: string; phone: string } | null;
+  request: {
+    id: string;
+    pickupAddress: string;
+    patientCondition: string;
+    priority: Priority;
+    status: RequestStatus;
+    patient: { id: string; name: string; phone: string | null };
+  };
 };

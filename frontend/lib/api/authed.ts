@@ -20,7 +20,12 @@ export async function authedAction<T>(
     return { ok: true, data, meta };
   } catch (error) {
     if (isApiError(error)) {
-      return { ok: false, error: error.message, fieldErrors: error.fieldErrors() };
+      return {
+        ok: false,
+        error: error.message,
+        status: error.statusCode,
+        fieldErrors: error.fieldErrors(),
+      };
     }
 
     return { ok: false, error: 'Something went wrong. Please try again.' };

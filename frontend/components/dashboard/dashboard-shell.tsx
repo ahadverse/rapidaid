@@ -12,7 +12,7 @@ import { SidebarNav } from './sidebar-nav';
 import { UserMenu } from './user-menu';
 
 type DashboardShellProps = {
-  role: Role;
+  role?: Role;
   children: ReactNode;
 };
 
@@ -25,16 +25,18 @@ export async function DashboardShell({ role, children }: DashboardShellProps) {
     redirect('/login');
   }
 
-  if (session.role !== role) {
+  if (role && session.role !== role) {
     redirect(roleHome[session.role]);
   }
+
+  const home = roleHome[session.role];
 
   return (
     <AuthProvider user={session}>
       <QueryProvider>
         <div className="flex min-h-screen">
           <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col gap-6 border-r bg-background p-4 lg:flex">
-            <Brand href={roleHome[role]} />
+            <Brand href={home} />
             <SidebarNav />
           </aside>
           <div className="flex min-w-0 flex-1 flex-col">
@@ -42,7 +44,7 @@ export async function DashboardShell({ role, children }: DashboardShellProps) {
               <div className="flex items-center gap-2">
                 <MobileSidebar />
                 <div className="lg:hidden">
-                  <Brand href={roleHome[role]} />
+                  <Brand href={home} />
                 </div>
               </div>
               <div className="flex items-center gap-1">

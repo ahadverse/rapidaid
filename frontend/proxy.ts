@@ -1,14 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import type { Role } from '@/lib/api/types';
+import { ROLES, type Role } from '@/lib/api/types';
 import { authRequest } from '@/lib/auth/backend';
 import { ACCESS_COOKIE, REFRESH_COOKIE, sessionCookieEntries } from '@/lib/auth/cookies';
 import { decodeAccessToken } from '@/lib/auth/token';
 import { roleHome } from '@/lib/navigation';
 
-const guardedPrefixes: { prefix: string; role: Role }[] = [
-  { prefix: '/admin', role: 'ADMIN' },
-  { prefix: '/dashboard', role: 'PATIENT' },
-  { prefix: '/driver', role: 'DRIVER' },
+const guardedPrefixes: { prefix: string; roles: readonly Role[] }[] = [
+  { prefix: '/admin', roles: ['ADMIN'] },
+  { prefix: '/dashboard', roles: ['PATIENT'] },
+  { prefix: '/driver', roles: ['DRIVER'] },
+  { prefix: '/trips', roles: ROLES },
 ];
 
 const guestOnlyPaths = ['/login', '/register'];
@@ -55,7 +56,7 @@ export async function proxy(request: NextRequest) {
     response = guard ? NextResponse.redirect(new URL('/login', request.url)) : NextResponse.next();
   } else if (guestOnly) {
     response = NextResponse.redirect(new URL(roleHome[session.role], request.url));
-  } else if (guard && guard.role !== session.role) {
+  } else if (guard && !guard.roles.includes(session.role)) {
     response = NextResponse.redirect(new URL(roleHome[session.role], request.url));
   } else {
     response = NextResponse.next();
@@ -77,5 +78,12 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/dashboard/:path*', '/driver/:path*', '/login', '/register'],
+  matcher: [
+    '/admin/:path*',
+    '/dashboard/:path*',
+    '/driver/:path*',
+    '/trips/:path*',
+    '/login',
+    '/register',
+  ],
 };
