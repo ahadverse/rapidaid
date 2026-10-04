@@ -71,3 +71,12 @@ export type ApiResult<T> = {
   meta?: Meta;
   message: string;
 };
+
+export type Notification = {
+  id: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  isRead: boolean;
+  createdAt: string;
+};
