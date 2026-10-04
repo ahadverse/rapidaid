@@ -1,13 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState, useTransition } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, CheckCheck } from 'lucide-react';
-import { toast } from 'sonner';
 import {
   getUnreadNotificationsAction,
   markAllNotificationsReadAction,
   markNotificationReadAction,
-  type UnreadNotifications,
 } from '@/app/actions/notifications';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,60 +16,45 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-const empty: UnreadNotifications = { items: [], total: 0 };
+import { queryKeys } from '@/lib/query/keys';
 
 export function NotificationBell() {
-  const [unread, setUnread] = useState<UnreadNotifications>(empty);
-  const [pending, startTransition] = useTransition();
+  const queryClient = useQueryClient();
 
-  const load = useCallback(
-    () =>
-      getUnreadNotificationsAction()
-        .then(setUnread)
-        .catch(() => setUnread(empty)),
-    [],
-  );
+  const { data } = useQuery({
+    queryKey: queryKeys.notifications.unread(),
+    queryFn: getUnreadNotificationsAction,
+    meta: { silent: true },
+  });
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
 
-  const markRead = (id: string) => {
-    startTransition(async () => {
-      try {
-        await markNotificationReadAction(id);
-        await load();
-      } catch {
-        toast.error('Could not mark the notification as read');
-      }
-    });
-  };
+  const markRead = useMutation({
+    mutationFn: markNotificationReadAction,
+    onSuccess: refresh,
+  });
 
-  const markAllRead = () => {
-    startTransition(async () => {
-      try {
-        await markAllNotificationsReadAction();
-        await load();
-      } catch {
-        toast.error('Could not mark notifications as read');
-      }
-    });
-  };
+  const markAllRead = useMutation({
+    mutationFn: markAllNotificationsReadAction,
+    onSuccess: refresh,
+  });
+
+  const items = data?.items ?? [];
+  const total = data?.total ?? 0;
 
   return (
-    <DropdownMenu onOpenChange={(open) => open && void load()}>
+    <DropdownMenu onOpenChange={(open) => open && void refresh()}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
           size="icon"
           className="relative"
-          aria-label={`Notifications, ${unread.total} unread`}
+          aria-label={`Notifications, ${total} unread`}
         >
           <Bell aria-hidden="true" />
-          {unread.total > 0 && (
+          {total > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-4 text-primary-foreground">
-              {unread.total > 99 ? '99+' : unread.total}
+              {total > 99 ? '99+' : total}
             </span>
           )}
         </Button>
@@ -82,26 +65,26 @@ export function NotificationBell() {
           <Button
             variant="ghost"
             size="sm"
-            disabled={pending || unread.total === 0}
-            onClick={markAllRead}
+            disabled={markAllRead.isPending || total === 0}
+            onClick={() => markAllRead.mutate()}
           >
             <CheckCheck aria-hidden="true" />
             Mark all read
           </Button>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {unread.items.length === 0 ? (
+        {items.length === 0 ? (
           <p className="px-3 py-6 text-center text-sm text-muted-foreground">
             You are all caught up
           </p>
         ) : (
-          unread.items.map((item) => (
+          items.map((item) => (
             <DropdownMenuItem
               key={item.id}
               className="flex flex-col items-start gap-0.5"
               onSelect={(event) => {
                 event.preventDefault();
-                markRead(item.id);
+                markRead.mutate(item.id);
               }}
             >
               <span className="text-sm font-medium">{item.title}</span>
