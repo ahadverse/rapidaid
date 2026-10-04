@@ -80,3 +80,33 @@ export type Notification = {
   isRead: boolean;
   createdAt: string;
 };
+
+export type EmergencyRequest = {
+  id: string;
+  pickupAddress: string;
+  pickupLat: number | null;
+  pickupLng: number | null;
+  patientCondition: string;
+  priority: Priority;
+  status: RequestStatus;
+  requestedAmbulanceType: AmbulanceType | null;
+  cancelReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Trip = {
+  id: string;
+  status: TripStatus;
+  distanceKm: number | string | null;
+  fare: number | string | null;
+  cancelReason: string | null;
+  dispatchedAt: string | null;
+  pickedUpAt: string | null;
+  arrivedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  ambulance: { id: string; regNumber: string; type: AmbulanceType; stationArea: string };
+  hospital: { id: string; name: string; area: string } | null;
+  request: { id: string; pickupAddress: string; priority: Priority; status: RequestStatus };
+};

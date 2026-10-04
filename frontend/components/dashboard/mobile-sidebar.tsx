@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,10 +12,12 @@ import {
 } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/use-auth';
 import { roleLabel } from '@/lib/dashboard-nav';
+import { useUiStore } from '@/stores/ui-store';
 import { SidebarNav } from './sidebar-nav';
 
 export function MobileSidebar() {
-  const [open, setOpen] = useState(false);
+  const open = useUiStore((state) => state.sidebarOpen);
+  const setOpen = useUiStore((state) => state.setSidebarOpen);
   const { role } = useAuth();
 
   return (
