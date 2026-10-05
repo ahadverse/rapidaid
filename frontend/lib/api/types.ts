@@ -91,6 +91,26 @@ export type Notification = {
   createdAt: string;
 };
 
+export type Payment = {
+  id: string;
+  amount: number | string;
+  status: PaymentStatus;
+  transactionId: string;
+  gateway: string;
+  paidAt: string | null;
+  createdAt: string;
+  trip: {
+    id: string;
+    status: TripStatus;
+    distanceKm: number | string | null;
+    fare: number | string | null;
+    completedAt: string | null;
+    hospital: { id: string; name: string; area: string } | null;
+  };
+};
+
+export type PaymentSession = Payment & { gatewayPageURL: string; sessionKey: string | null };
+
 export type EmergencyRequest = {
   id: string;
   pickupAddress: string;
