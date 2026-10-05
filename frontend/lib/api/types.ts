@@ -181,3 +181,36 @@ export type DriverProfile = {
     status: AmbulanceStatus;
   } | null;
 };
+
+export type DashboardStats = {
+  users: { total: number; blocked: number; byRole: Record<Role, number> };
+  ambulances: { total: number; byStatus: Record<AmbulanceStatus, number> };
+  hospitals: { total: number };
+  emergencyRequests: {
+    total: number;
+    byStatus: Record<RequestStatus, number>;
+    byPriority: Record<Priority, number>;
+  };
+  trips: {
+    total: number;
+    active: number;
+    dispatchedToday: number;
+    byStatus: Record<TripStatus, number>;
+    averageFare: string;
+    averageDistanceKm: string;
+  };
+  revenue: {
+    collected: string;
+    paidPayments: number;
+    outstanding: string;
+    pendingPayments: number;
+  };
+  generatedAt: string;
+};
+
+export type DailyTripRow = { date: string; trips: number; revenue: number };
+
+export type TripReport = {
+  range: { from: string; to: string };
+  daily: DailyTripRow[];
+};
