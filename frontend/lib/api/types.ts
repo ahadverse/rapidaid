@@ -158,3 +158,26 @@ export type Trip = {
     patient: { id: string; name: string; phone: string | null };
   };
 };
+
+export type Hospital = {
+  id: string;
+  name: string;
+  address: string;
+  area: string;
+  phone: string;
+  specializations: string[];
+  availableBeds: number;
+};
+
+export type DriverProfile = {
+  id: string;
+  licenseNumber: string;
+  isAvailable: boolean;
+  user: { id: string; name: string; email: string; phone: string | null; status: UserStatus };
+  ambulance: {
+    id: string;
+    regNumber: string;
+    type: AmbulanceType;
+    status: AmbulanceStatus;
+  } | null;
+};
