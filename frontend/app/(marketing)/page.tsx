@@ -157,6 +157,7 @@ export default function Home() {
               width={640}
               height={440}
               priority
+              sizes="(min-width: 1024px) 560px, 100vw"
               className="h-auto w-full rounded-3xl border bg-background shadow-2xl"
             />
             <div className="absolute -top-4 left-2 flex animate-float items-center gap-2 rounded-xl border bg-background/95 px-3 py-2 text-sm font-medium shadow-lg backdrop-blur sm:-left-6">
