@@ -212,6 +212,17 @@ export type DailyTripRow = { date: string; trips: number; revenue: number };
 
 export type TripReport = {
   range: { from: string; to: string };
+  trips: {
+    byStatus: Partial<Record<TripStatus, number>>;
+    completed: number;
+    cancelled: number;
+    totalDistanceKm: string;
+    averageDistanceKm: string;
+    averageFare: string;
+  };
+  emergencyRequests: { byPriority: Partial<Record<Priority, number>> };
+  revenue: { billed: string; collected: string; paidPayments: number };
+  topHospitals: { id: string; name: string; area: string; trips: number }[];
   daily: DailyTripRow[];
 };
 

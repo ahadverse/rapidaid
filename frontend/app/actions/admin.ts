@@ -8,8 +8,11 @@ export async function getDashboardStatsAction(): Promise<ActionResult<DashboardS
   return authedAction<DashboardStats>('/admin/dashboard-stats');
 }
 
-export async function getTripReportAction(): Promise<ActionResult<TripReport>> {
-  return authedAction<TripReport>('/admin/reports/trips');
+export async function getTripReportAction(query?: {
+  from?: string;
+  to?: string;
+}): Promise<ActionResult<TripReport>> {
+  return authedAction<TripReport>('/admin/reports/trips', { query });
 }
 
 export async function listAuditLogsAction(query: {
