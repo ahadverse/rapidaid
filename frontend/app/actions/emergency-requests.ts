@@ -2,7 +2,7 @@
 
 import type { ActionResult } from '@/lib/api/action-result';
 import { authedAction } from '@/lib/api/authed';
-import type { EmergencyRequest } from '@/lib/api/types';
+import type { EmergencyRequest, QueuedRequest, Trip } from '@/lib/api/types';
 import {
   cancelRequestSchema,
   createRequestSchema,
@@ -69,5 +69,33 @@ export async function cancelRequestAction(
   return authedAction<EmergencyRequest>(`/emergency-requests/${id}/cancel`, {
     method: 'PATCH',
     body: parsed.data,
+  });
+}
+
+const QUEUE_STATUSES = ['PENDING', 'NO_AMBULANCE_AVAILABLE'] as const;
+
+export async function listDispatchQueueAction(): Promise<ActionResult<QueuedRequest[]>> {
+  const results = await Promise.all(
+    QUEUE_STATUSES.map((status) =>
+      authedAction<QueuedRequest[]>('/emergency-requests', {
+        query: { status, limit: 100, sortBy: 'priority', sortOrder: 'asc' },
+      }),
+    ),
+  );
+
+  const failed = results.find((result) => !result.ok);
+
+  if (failed && !failed.ok) {
+    return failed;
+  }
+
+  const data = results.flatMap((result) => (result.ok ? result.data : []));
+
+  return { ok: true, data };
+}
+
+export async function dispatchRequestAction(id: string): Promise<ActionResult<Trip>> {
+  return authedAction<Trip>(`/emergency-requests/${encodeURIComponent(id)}/dispatch`, {
+    method: 'POST',
   });
 }

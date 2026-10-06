@@ -214,3 +214,29 @@ export type TripReport = {
   range: { from: string; to: string };
   daily: DailyTripRow[];
 };
+
+export type QueuedRequest = EmergencyRequest & {
+  patient: { id: string; name: string; email: string; phone: string | null };
+};
+
+export type AuditLog = {
+  id: string;
+  action: string;
+  entity: string;
+  entityId: string;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+  createdAt: string;
+  actor: { id: string; name: string; email: string; role: Role } | null;
+};
+
+export type AmbulanceRecord = {
+  id: string;
+  regNumber: string;
+  type: AmbulanceType;
+  status: AmbulanceStatus;
+  baseFare: number | string;
+  perKmRate: number | string;
+  stationArea: string;
+  createdAt: string;
+};
