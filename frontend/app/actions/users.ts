@@ -2,7 +2,7 @@
 
 import type { ActionResult } from '@/lib/api/action-result';
 import { authedAction } from '@/lib/api/authed';
-import type { UserProfile } from '@/lib/api/types';
+import type { Role, UserProfile, UserStatus } from '@/lib/api/types';
 import {
   changePasswordSchema,
   profileSchema,
@@ -37,4 +37,30 @@ export async function changePasswordAction(values: ChangePasswordValues): Promis
     method: 'POST',
     body: { oldPassword, newPassword },
   });
+}
+
+export async function listUsersAction(query: {
+  page: number;
+  limit: number;
+  searchTerm?: string;
+  role?: Role;
+  status?: UserStatus;
+  sortBy: string;
+  sortOrder: string;
+}): Promise<ActionResult<UserProfile[]>> {
+  return authedAction<UserProfile[]>('/users', { query });
+}
+
+export async function updateUserStatusAction(
+  id: string,
+  status: UserStatus,
+): Promise<ActionResult<UserProfile>> {
+  return authedAction<UserProfile>(`/users/${encodeURIComponent(id)}/status`, {
+    method: 'PATCH',
+    body: { status },
+  });
+}
+
+export async function deleteUserAction(id: string): Promise<ActionResult> {
+  return authedAction<void>(`/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
