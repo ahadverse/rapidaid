@@ -8,6 +8,10 @@ export async function getMyDriverProfileAction(): Promise<ActionResult<DriverPro
   return authedAction<DriverProfile>('/drivers/me');
 }
 
+export async function listDriversAction(): Promise<ActionResult<DriverProfile[]>> {
+  return authedAction<DriverProfile[]>('/drivers', { query: { limit: 100 } });
+}
+
 export async function updateMyAvailabilityAction(
   isAvailable: boolean,
 ): Promise<ActionResult<DriverProfile>> {

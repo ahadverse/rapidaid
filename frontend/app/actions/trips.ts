@@ -22,11 +22,25 @@ export async function getTripAction(id: string): Promise<ActionResult<Trip>> {
 export async function updateTripStatusAction(
   id: string,
   status: TripStatus,
+  cancelReason?: string,
 ): Promise<ActionResult<Trip>> {
   return authedAction<Trip>(`/trips/${encodeURIComponent(id)}/status`, {
     method: 'PATCH',
-    body: { status },
+    body: cancelReason ? { status, cancelReason } : { status },
   });
+}
+
+export async function listAllTripsAction(query: {
+  page: number;
+  limit: number;
+  status?: TripStatus;
+  driverId?: string;
+  from?: string;
+  to?: string;
+  sortBy: string;
+  sortOrder: string;
+}): Promise<ActionResult<Trip[]>> {
+  return authedAction<Trip[]>('/trips', { query });
 }
 
 export async function selectTripHospitalAction(
