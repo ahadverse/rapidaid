@@ -9,6 +9,7 @@ const guardedPrefixes: { prefix: string; roles: readonly Role[] }[] = [
   { prefix: '/admin', roles: ['ADMIN'] },
   { prefix: '/dashboard', roles: ['PATIENT'] },
   { prefix: '/driver', roles: ['DRIVER'] },
+  { prefix: '/payment', roles: ['PATIENT'] },
   { prefix: '/trips', roles: ROLES },
 ];
 
@@ -82,6 +83,7 @@ export const config = {
     '/admin/:path*',
     '/dashboard/:path*',
     '/driver/:path*',
+    '/payment/:path*',
     '/trips/:path*',
     '/login',
     '/register',

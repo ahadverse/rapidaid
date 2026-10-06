@@ -3,8 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Banknote, CheckCircle2, MapPinned, Receipt, Route, XCircle } from 'lucide-react';
 import { getTripReportAction } from '@/app/actions/admin';
-import { BarBreakdownChart } from '@/components/admin/bar-breakdown-chart';
-import { DailyTrendChart } from '@/components/admin/daily-trend-chart';
+import { BarBreakdownChart, DailyTrendChart } from '@/components/admin/lazy-charts';
 import { CardSkeleton } from '@/components/shared/card-skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';

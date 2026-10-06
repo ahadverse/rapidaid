@@ -19,3 +19,7 @@ export async function initPaymentAction(tripId: string): Promise<ActionResult<Pa
     method: 'POST',
   });
 }
+
+export async function getPaymentAction(id: string): Promise<ActionResult<Payment>> {
+  return authedAction<Payment>(`/payments/${encodeURIComponent(id)}`);
+}

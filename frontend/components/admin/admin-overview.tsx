@@ -3,8 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Ambulance, Banknote, ClipboardList, Route } from 'lucide-react';
 import { getDashboardStatsAction, getTripReportAction } from '@/app/actions/admin';
-import { DailyTrendChart } from '@/components/admin/daily-trend-chart';
-import { RequestsByStatusChart } from '@/components/admin/requests-by-status-chart';
+import { DailyTrendChart, RequestsByStatusChart } from '@/components/admin/lazy-charts';
 import { CardSkeleton } from '@/components/shared/card-skeleton';
 import { ErrorState } from '@/components/shared/error-state';
 import { StatCard } from '@/components/shared/stat-card';
