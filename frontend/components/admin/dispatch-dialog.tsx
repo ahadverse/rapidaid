@@ -59,8 +59,10 @@ export function DispatchDialog({ request, onClose, onDispatched }: DispatchDialo
   });
   const selectedId = useWatch({ control, name: 'ambulanceId' });
 
+  const crewsKey = queryKeys.drivers.list({ dispatch: true });
+
   const crews = useQuery({
-    queryKey: queryKeys.drivers.list({ dispatch: true }),
+    queryKey: crewsKey,
     queryFn: async () =>
       toCrews(
         unwrap(
@@ -77,8 +79,10 @@ export function DispatchDialog({ request, onClose, onDispatched }: DispatchDialo
     enabled: request !== null,
   });
 
+  // Crews change as drivers finish trips elsewhere, so each opening starts from a fresh list.
   function close() {
     reset(DEFAULT_VALUES);
+    queryClient.removeQueries({ queryKey: crewsKey });
     onClose();
   }
 

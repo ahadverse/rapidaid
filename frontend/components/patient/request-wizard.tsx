@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Controller, useForm, useWatch, type FieldPath, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
@@ -136,6 +136,16 @@ export function RequestWizard() {
     }
   }
 
+  function onFormSubmit(event: FormEvent<HTMLFormElement>) {
+    if (isLast) {
+      void handleSubmit(onSubmit)(event);
+      return;
+    }
+
+    event.preventDefault();
+    void next();
+  }
+
   return (
     <Card>
       <CardHeader className="space-y-4">
@@ -175,7 +185,7 @@ export function RequestWizard() {
         </div>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <form onSubmit={onFormSubmit} noValidate>
           <FieldGroup>
             {step === 0 ? (
               <Controller
@@ -283,12 +293,13 @@ export function RequestWizard() {
               >
                 Back
               </Button>
+              {/* Separate keys stop React reusing the clicked Continue button as the submit button. */}
               {isLast ? (
-                <Button type="submit" disabled={submit.isPending}>
+                <Button key="submit" type="submit" disabled={submit.isPending}>
                   {submit.isPending ? 'Submitting...' : 'Confirm request'}
                 </Button>
               ) : (
-                <Button type="button" onClick={next}>
+                <Button key="next" type="button" onClick={next}>
                   Continue
                 </Button>
               )}
