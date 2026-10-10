@@ -109,7 +109,8 @@ export function DispatchDialog({ request, onClose, onDispatched }: DispatchDialo
   const requestedType = request?.requestedAmbulanceType ?? null;
   const options = [...(crews.data ?? [])].sort(
     (a, b) =>
-      Number(b.ambulance.type === requestedType) - Number(a.ambulance.type === requestedType),
+      Number(b.ambulance.type === requestedType) - Number(a.ambulance.type === requestedType) ||
+      a.ambulance.regNumber.localeCompare(b.ambulance.regNumber),
   );
   const selected = options.find((crew) => crew.ambulance.id === selectedId);
 

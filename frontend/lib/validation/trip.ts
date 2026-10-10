@@ -13,4 +13,9 @@ export const completeTripSchema = z.object({
     ),
 });
 
+export const tripHospitalSchema = z.object({
+  hospitalId: z.uuid('Choose a destination hospital'),
+});
+
 export type CompleteTripValues = z.infer<typeof completeTripSchema>;
+export type TripHospitalValues = z.infer<typeof tripHospitalSchema>;

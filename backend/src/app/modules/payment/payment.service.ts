@@ -133,7 +133,14 @@ const init = async (user: TJwtPayload, tripId: string) => {
 const findByTransactionId = async (transactionId: string) => {
   const payment = await prisma.payment.findUnique({
     where: { transactionId },
-    select: { id: true, status: true, amount: true, transactionId: true, patientId: true },
+    select: {
+      id: true,
+      status: true,
+      amount: true,
+      transactionId: true,
+      patientId: true,
+      trip: { select: { driver: { select: { userId: true } } } },
+    },
   });
 
   if (!payment) {
@@ -227,6 +234,12 @@ const settle = async (payload: TCallbackPayload) => {
         userId: payment.patientId,
         title: 'Payment received',
         message: `We received your payment of BDT ${payment.amount.toFixed(2)}. Thank you.`,
+        type: NotificationType.PAYMENT,
+      },
+      {
+        userId: payment.trip.driver.userId,
+        title: 'Trip paid',
+        message: `The patient paid BDT ${payment.amount.toFixed(2)} for your trip.`,
         type: NotificationType.PAYMENT,
       },
     ]);
