@@ -26,6 +26,7 @@ export const paymentSelect = {
   gateway: true,
   paidAt: true,
   createdAt: true,
+  patient: { select: { id: true, name: true, email: true } },
   trip: {
     select: {
       id: true,
@@ -34,6 +35,8 @@ export const paymentSelect = {
       fare: true,
       completedAt: true,
       hospital: { select: { id: true, name: true, area: true } },
+      ambulance: { select: { id: true, regNumber: true } },
+      driver: { select: { id: true, user: { select: { id: true, name: true } } } },
     },
   },
 } as const;

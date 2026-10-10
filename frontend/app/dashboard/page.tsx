@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Plus } from 'lucide-react';
+import { PaymentDueBanner } from '@/components/patient/payment-due-banner';
 import { RequestHistory } from '@/components/patient/request-history';
 import { TripHistory } from '@/components/patient/trip-history';
 import { PageHeader } from '@/components/shared/page-header';
@@ -25,6 +26,7 @@ export default function PatientDashboardPage() {
           </Button>
         }
       />
+      <PaymentDueBanner />
       <section aria-labelledby="requests-heading" className="space-y-3">
         <h2 id="requests-heading" className="text-lg font-semibold">
           Request history

@@ -4,6 +4,7 @@ import {
   CreditCard,
   LayoutDashboard,
   ListOrdered,
+  Receipt,
   Route,
   ScrollText,
   Siren,
@@ -68,6 +69,7 @@ export const dashboardNav: Record<Role, DashboardNavGroup[]> = {
     {
       label: 'Insights',
       items: [
+        { href: '/admin/transactions', label: 'Transactions', icon: Receipt },
         { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
         { href: '/admin/audit-logs', label: 'Audit logs', icon: ScrollText },
       ],

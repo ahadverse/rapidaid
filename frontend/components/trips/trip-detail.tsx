@@ -13,11 +13,13 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { getTripAction } from '@/app/actions/trips';
+import { PayNowButton } from '@/components/patient/pay-now-button';
 import { PageHeader } from '@/components/shared/page-header';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/use-auth';
+import { useUnpaidTrips } from '@/hooks/use-unpaid-trips';
 import { unwrap } from '@/lib/api/action-result';
 import type { Trip, TripStatus } from '@/lib/api/types';
 import { formatDateTime, formatMoney } from '@/lib/format';
@@ -90,6 +92,8 @@ export function TripDetail({ initialTrip }: { initialTrip: Trip }) {
   });
 
   const isLive = !FINAL_STATUSES.includes(trip.status);
+  const unpaid = useUnpaidTrips(role === 'PATIENT' && trip.status === 'COMPLETED');
+  const canPay = unpaid.data?.some((item) => item.id === trip.id) ?? false;
 
   return (
     <div className="space-y-6">
@@ -169,10 +173,13 @@ export function TripDetail({ initialTrip }: { initialTrip: Trip }) {
           </DetailCard>
           <DetailCard icon={Receipt} title="Fare">
             {trip.fare !== null && trip.distanceKm !== null ? (
-              <dl className="space-y-3">
-                <Detail label="Distance">{Number(trip.distanceKm)} km</Detail>
-                <Detail label="Fare">{formatMoney(trip.fare)}</Detail>
-              </dl>
+              <div className="space-y-4">
+                <dl className="space-y-3">
+                  <Detail label="Distance">{Number(trip.distanceKm)} km</Detail>
+                  <Detail label="Fare">{formatMoney(trip.fare)}</Detail>
+                </dl>
+                {canPay ? <PayNowButton tripId={trip.id} /> : null}
+              </div>
             ) : (
               <p className="text-muted-foreground">
                 {trip.status === 'CANCELLED'

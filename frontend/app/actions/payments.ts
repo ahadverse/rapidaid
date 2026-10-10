@@ -14,6 +14,16 @@ export async function listMyPaymentsAction(query: {
   });
 }
 
+export async function listAllPaymentsAction(query: {
+  page: number;
+  limit: number;
+  status?: PaymentStatus;
+  sortBy: string;
+  sortOrder: string;
+}): Promise<ActionResult<Payment[]>> {
+  return authedAction<Payment[]>('/payments/me', { query });
+}
+
 export async function initPaymentAction(tripId: string): Promise<ActionResult<PaymentSession>> {
   return authedAction<PaymentSession>(`/payments/init/${encodeURIComponent(tripId)}`, {
     method: 'POST',

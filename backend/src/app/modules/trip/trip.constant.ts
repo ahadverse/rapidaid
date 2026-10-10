@@ -65,6 +65,11 @@ export const tripDetailSelect = {
       patient: { select: { id: true, name: true, phone: true } },
     },
   },
+  payments: {
+    select: { id: true, status: true, paidAt: true },
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+  },
 } as const;
 
 export const tripPaymentSelect = {

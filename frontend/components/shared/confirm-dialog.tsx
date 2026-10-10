@@ -13,6 +13,8 @@ type ConfirmDialogProps = {
   title: string;
   description: string;
   confirmLabel: string;
+  cancelLabel?: string;
+  confirmVariant?: 'default' | 'destructive';
   pending?: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -23,6 +25,8 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  cancelLabel = 'Keep it',
+  confirmVariant = 'destructive',
   pending = false,
   onConfirm,
   onClose,
@@ -36,9 +40,9 @@ export function ConfirmDialog({
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
-            Keep it
+            {cancelLabel}
           </Button>
-          <Button variant="destructive" disabled={pending} onClick={onConfirm}>
+          <Button variant={confirmVariant} disabled={pending} onClick={onConfirm}>
             {pending ? 'Working...' : confirmLabel}
           </Button>
         </DialogFooter>

@@ -1,35 +1,17 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Receipt } from 'lucide-react';
-import { listMyPaymentsAction } from '@/app/actions/payments';
-import { listMyTripsAction } from '@/app/actions/trips';
 import { PayNowButton } from '@/components/patient/pay-now-button';
 import { CardSkeleton } from '@/components/shared/card-skeleton';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { unwrap } from '@/lib/api/action-result';
+import { useUnpaidTrips } from '@/hooks/use-unpaid-trips';
 import { formatDateTime, formatMoney } from '@/lib/format';
-import { queryKeys } from '@/lib/query/keys';
-
-const SCAN_LIMIT = 100;
 
 export function UnpaidTrips() {
-  const { data, isPending, isError, refetch } = useQuery({
-    queryKey: queryKeys.trips.mine({ status: 'COMPLETED', unpaid: true }),
-    queryFn: async () => {
-      const [trips, paid] = await Promise.all([
-        listMyTripsAction({ status: 'COMPLETED', limit: SCAN_LIMIT }),
-        listMyPaymentsAction({ status: 'PAID', page: 1, limit: SCAN_LIMIT }),
-      ]);
-      const paidTripIds = new Set(unwrap(paid).data.map((payment) => payment.trip.id));
-
-      return unwrap(trips).data.filter((trip) => trip.fare !== null && !paidTripIds.has(trip.id));
-    },
-    meta: { silent: true },
-  });
+  const { data, isPending, isError, refetch } = useUnpaidTrips();
 
   if (isPending) {
     return (
