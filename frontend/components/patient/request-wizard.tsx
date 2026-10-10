@@ -125,8 +125,9 @@ export function RequestWizard() {
     }
   }
 
-  function onSubmit(formValues: CreateRequestValues) {
-    const parsed = createRequestSchema.safeParse(formValues);
+  // handleSubmit hands over the step resolver's output, which only holds the last step's fields.
+  function onSubmit() {
+    const parsed = createRequestSchema.safeParse(getValues());
 
     if (parsed.success) {
       submit.mutate(parsed.data);
