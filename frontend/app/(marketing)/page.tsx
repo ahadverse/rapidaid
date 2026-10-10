@@ -91,7 +91,7 @@ const coverageAreas = [
 
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col overflow-x-clip">
+    <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col overflow-x-clip">
       <section className="relative isolate border-b">
         <div
           aria-hidden="true"

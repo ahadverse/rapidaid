@@ -53,7 +53,11 @@ const faqs = [
 
 export default function FaqPage() {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 space-y-10 px-4 py-12 sm:px-6">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="mx-auto w-full max-w-3xl flex-1 space-y-10 px-4 py-12 sm:px-6"
+    >
       <PageHeader title="Frequently asked questions" description={description} />
       <div className="divide-y rounded-xl border">
         {faqs.map(({ question, answer }) => (

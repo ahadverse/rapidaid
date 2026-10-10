@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Ambulance, Banknote, ClipboardList, Route } from 'lucide-react';
 import { getDashboardStatsAction, getTripReportAction } from '@/app/actions/admin';
+import { FleetStatusCard } from '@/components/admin/fleet-status-card';
 import { DailyTrendChart, RequestsByStatusChart } from '@/components/admin/lazy-charts';
 import { CardSkeleton } from '@/components/shared/card-skeleton';
 import { ErrorState } from '@/components/shared/error-state';
@@ -72,22 +73,30 @@ export function AdminOverview() {
           label="Active trips"
           value={data.trips.active}
           icon={Route}
+          tone="info"
           hint={`${data.trips.dispatchedToday} dispatched today`}
         />
         <StatCard
           label="Available ambulances"
           value={data.ambulances.byStatus.AVAILABLE}
           icon={Ambulance}
+          tone="success"
           hint={`of ${data.ambulances.total} in the fleet`}
         />
         <StatCard
           label="Revenue collected"
           value={formatMoney(data.revenue.collected)}
           icon={Banknote}
+          tone="warning"
           hint={`${formatMoney(data.revenue.outstanding)} outstanding`}
         />
       </div>
-      <RequestsByStatusChart stats={data} />
+      <div className="grid gap-6 xl:grid-cols-3">
+        <div className="xl:col-span-2">
+          <RequestsByStatusChart stats={data} />
+        </div>
+        <FleetStatusCard total={data.ambulances.total} byStatus={data.ambulances.byStatus} />
+      </div>
       {report.isPending ? (
         <TrendSkeletons />
       ) : report.isError ? (

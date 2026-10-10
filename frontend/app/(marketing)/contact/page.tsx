@@ -24,7 +24,11 @@ const details: { icon: LucideIcon; label: string; value: string }[] = [
 
 export default function ContactPage() {
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 space-y-10 px-4 py-12 sm:px-6">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="mx-auto w-full max-w-6xl flex-1 space-y-10 px-4 py-12 sm:px-6"
+    >
       <PageHeader title="Contact us" description={description} />
       <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
         <Card>

@@ -39,7 +39,11 @@ const values: { icon: LucideIcon; title: string; text: string }[] = [
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 space-y-12 px-4 py-12 sm:px-6">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="mx-auto w-full max-w-6xl flex-1 space-y-12 px-4 py-12 sm:px-6"
+    >
       <PageHeader title="About RapidAid" description={description} />
       <section className="max-w-3xl space-y-4 text-muted-foreground">
         <p>

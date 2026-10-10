@@ -1,10 +1,11 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { LogIn } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from '@/components/ui/field';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { loginAction } from '@/app/actions/auth';
 import { env } from '@/lib/env';
@@ -26,7 +27,7 @@ export function LoginForm() {
       }
     }
 
-    toast.error(result.error ?? 'Sign in failed');
+    toast.error(result.error ?? 'Login failed');
   }
 
   return (
@@ -68,9 +69,9 @@ export function LoginForm() {
           )}
         />
         <Button type="submit" size="lg" disabled={formState.isSubmitting}>
-          {formState.isSubmitting ? 'Signing in...' : 'Sign in'}
+          <LogIn aria-hidden="true" />
+          {formState.isSubmitting ? 'Logging in...' : 'Login'}
         </Button>
-        <FieldSeparator>OR</FieldSeparator>
         <Button variant="outline" size="lg" asChild>
           <a href={`${env.apiUrl}/auth/google`}>
             <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">

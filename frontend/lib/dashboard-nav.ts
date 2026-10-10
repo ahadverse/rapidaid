@@ -22,28 +22,56 @@ export type DashboardNavItem = {
   icon: LucideIcon;
 };
 
-export const dashboardNav: Record<Role, DashboardNavItem[]> = {
+export type DashboardNavGroup = {
+  label?: string;
+  items: DashboardNavItem[];
+};
+
+export const dashboardNav: Record<Role, DashboardNavGroup[]> = {
   PATIENT: [
-    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-    { href: '/dashboard/request', label: 'New request', icon: Siren },
-    { href: '/dashboard/payments', label: 'Payments', icon: CreditCard },
-    { href: '/dashboard/profile', label: 'Profile', icon: User },
+    {
+      items: [
+        { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+        { href: '/dashboard/request', label: 'New request', icon: Siren },
+        { href: '/dashboard/payments', label: 'Payments', icon: CreditCard },
+        { href: '/dashboard/profile', label: 'Profile', icon: User },
+      ],
+    },
   ],
   DRIVER: [
-    { href: '/driver', label: 'My trips', icon: Route },
-    { href: '/driver/earnings', label: 'Earnings', icon: Wallet },
-    { href: '/driver/profile', label: 'Profile', icon: User },
+    {
+      items: [
+        { href: '/driver', label: 'My trips', icon: Route },
+        { href: '/driver/earnings', label: 'Earnings', icon: Wallet },
+        { href: '/driver/profile', label: 'Profile', icon: User },
+      ],
+    },
   ],
   ADMIN: [
-    { href: '/admin', label: 'Overview', icon: LayoutDashboard },
-    { href: '/admin/dispatch', label: 'Dispatch', icon: ListOrdered },
-    { href: '/admin/trips', label: 'Trips', icon: Route },
-    { href: '/admin/ambulances', label: 'Ambulances', icon: Ambulance },
-    { href: '/admin/drivers', label: 'Drivers', icon: UserCog },
-    { href: '/admin/hospitals', label: 'Hospitals', icon: Building2 },
-    { href: '/admin/users', label: 'Users', icon: Users },
-    { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
-    { href: '/admin/audit-logs', label: 'Audit logs', icon: ScrollText },
+    { items: [{ href: '/admin', label: 'Overview', icon: LayoutDashboard }] },
+    {
+      label: 'Operations',
+      items: [
+        { href: '/admin/dispatch', label: 'Dispatch', icon: ListOrdered },
+        { href: '/admin/trips', label: 'Trips', icon: Route },
+      ],
+    },
+    {
+      label: 'Fleet and people',
+      items: [
+        { href: '/admin/ambulances', label: 'Ambulances', icon: Ambulance },
+        { href: '/admin/drivers', label: 'Drivers', icon: UserCog },
+        { href: '/admin/hospitals', label: 'Hospitals', icon: Building2 },
+        { href: '/admin/users', label: 'Users', icon: Users },
+      ],
+    },
+    {
+      label: 'Insights',
+      items: [
+        { href: '/admin/reports', label: 'Reports', icon: BarChart3 },
+        { href: '/admin/audit-logs', label: 'Audit logs', icon: ScrollText },
+      ],
+    },
   ],
 };
 

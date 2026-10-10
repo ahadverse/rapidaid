@@ -9,7 +9,11 @@ export default async function NotFound() {
   const session = await getSession();
 
   return (
-    <main className="flex flex-1 items-center justify-center px-4 py-16">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="flex flex-1 items-center justify-center px-4 py-16"
+    >
       <EmptyState
         className="w-full max-w-md"
         icon={SearchX}

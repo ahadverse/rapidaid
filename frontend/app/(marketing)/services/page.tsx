@@ -51,7 +51,11 @@ const services: { icon: LucideIcon; title: string; text: string }[] = [
 
 export default function ServicesPage() {
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 space-y-10 px-4 py-12 sm:px-6">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="mx-auto w-full max-w-6xl flex-1 space-y-10 px-4 py-12 sm:px-6"
+    >
       <PageHeader
         title="Our services"
         description={description}
