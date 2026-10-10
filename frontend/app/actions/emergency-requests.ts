@@ -3,6 +3,7 @@
 import type { ActionResult } from '@/lib/api/action-result';
 import { authedAction } from '@/lib/api/authed';
 import type { EmergencyRequest, QueuedRequest, Trip } from '@/lib/api/types';
+import { AUTO_ASSIGN, dispatchSchema, type DispatchValues } from '@/lib/validation/dispatch';
 import {
   cancelRequestSchema,
   createRequestSchema,
@@ -94,8 +95,20 @@ export async function listDispatchQueueAction(): Promise<ActionResult<QueuedRequ
   return { ok: true, data };
 }
 
-export async function dispatchRequestAction(id: string): Promise<ActionResult<Trip>> {
+export async function dispatchRequestAction(
+  id: string,
+  values: DispatchValues,
+): Promise<ActionResult<Trip>> {
+  const parsed = dispatchSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Please check the form' };
+  }
+
+  const { ambulanceId } = parsed.data;
+
   return authedAction<Trip>(`/emergency-requests/${encodeURIComponent(id)}/dispatch`, {
     method: 'POST',
+    body: ambulanceId === AUTO_ASSIGN ? {} : { ambulanceId },
   });
 }

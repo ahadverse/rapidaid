@@ -1,11 +1,11 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { Ambulance, Send, UserRound } from 'lucide-react';
 import { useState } from 'react';
-import { toast } from 'sonner';
-import { dispatchRequestAction, listDispatchQueueAction } from '@/app/actions/emergency-requests';
+import { listDispatchQueueAction } from '@/app/actions/emergency-requests';
+import { DispatchDialog } from '@/components/admin/dispatch-dialog';
 import { DataTable, type Column } from '@/components/shared/data-table';
 import { EmptyState } from '@/components/shared/empty-state';
 import { ErrorState } from '@/components/shared/error-state';
@@ -34,7 +34,7 @@ const byUrgency = (a: QueuedRequest, b: QueuedRequest) =>
   new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
 
 export function DispatchConsole() {
-  const queryClient = useQueryClient();
+  const [selected, setSelected] = useState<QueuedRequest | null>(null);
   const [dispatched, setDispatched] = useState<Trip | null>(null);
   const queueKey = queryKeys.emergencyRequests.list({ queue: true });
 
@@ -42,20 +42,6 @@ export function DispatchConsole() {
     queryKey: queueKey,
     queryFn: async () => unwrap(await listDispatchQueueAction()).data.sort(byUrgency),
     meta: { silent: true },
-  });
-
-  const dispatch = useMutation({
-    mutationFn: async (id: string) => unwrap(await dispatchRequestAction(id)).data,
-    onSuccess: (trip) => {
-      toast.success('Ambulance dispatched');
-      setDispatched(trip);
-    },
-    // A 409 means the queue on screen is stale, so it is reloaded either way.
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.emergencyRequests.all });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.trips.all });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.ambulances.all });
-    },
   });
 
   const columns: Column<QueuedRequest>[] = [
@@ -96,12 +82,11 @@ export function DispatchConsole() {
       cell: (row) => (
         <Button
           size="sm"
-          disabled={dispatch.isPending}
-          onClick={() => dispatch.mutate(row.id)}
+          onClick={() => setSelected(row)}
           aria-label={`Dispatch ambulance for ${row.patient.name}`}
         >
           <Send aria-hidden="true" />
-          {dispatch.isPending && dispatch.variables === row.id ? 'Dispatching...' : 'Dispatch'}
+          Dispatch
         </Button>
       ),
     },
@@ -131,6 +116,11 @@ export function DispatchConsole() {
           }
         />
       )}
+      <DispatchDialog
+        request={selected}
+        onClose={() => setSelected(null)}
+        onDispatched={setDispatched}
+      />
       <Dialog open={dispatched !== null} onOpenChange={(open) => !open && setDispatched(null)}>
         <DialogContent>
           <DialogHeader>
