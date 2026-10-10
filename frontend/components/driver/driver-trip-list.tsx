@@ -19,6 +19,7 @@ import { queryKeys } from '@/lib/query/keys';
 import { FINAL_TRIP_STATUSES } from '@/lib/trip-flow';
 import { CompleteTripDialog } from './complete-trip-dialog';
 import { TripActions } from './trip-actions';
+import { TripProgress } from './trip-progress';
 
 const POLL_INTERVAL_MS = 15_000;
 
@@ -81,7 +82,10 @@ export function DriverTripList() {
                   <p className="font-medium">Fare {formatMoney(trip.fare)}</p>
                 ) : null
               ) : (
-                <TripActions trip={trip} onComplete={setCompleting} />
+                <>
+                  <TripProgress status={trip.status} />
+                  <TripActions trip={trip} onComplete={setCompleting} />
+                </>
               )}
               <Link
                 href={`/trips/${trip.id}`}

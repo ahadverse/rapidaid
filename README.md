@@ -358,8 +358,11 @@ The repo ships a `render.yaml` blueprint.
    build `npm ci && prisma generate && prisma migrate deploy && npm run build`, health check
    `/api/v1/health`).
 3. Fill in the secrets marked `sync: false` — `DATABASE_URL` (Neon), both JWT secrets, the Google
-   OAuth pair, the SSLCommerz store credentials, and the four callback URLs pointing at the live
-   host (`https://rapidaid-api-ivyf.onrender.com/api/v1/payments/...`). `REDIS_URL` is optional.
+   OAuth pair, the SSLCommerz store credentials, and the four callback URLs. `SSL_SUCCESS_URL`,
+   `SSL_FAIL_URL` and `SSL_CANCEL_URL` point at the frontend
+   (`https://rapidaid-assignment-7.vercel.app/api/payments/{success,fail,cancel}`) so the browser
+   lands on the payment result pages; `SSL_IPN_URL` points at the API
+   (`https://rapidaid-api-ivyf.onrender.com/api/v1/payments/ipn`). `REDIS_URL` is optional.
 4. Deploy, then seed the production database once from your machine:
    `npm run seed:prod` with `.env.production` pointing at the same `DATABASE_URL`.
 5. Update `GOOGLE_CALLBACK_URL` in the GCP console and the SSLCommerz panel to the live host.

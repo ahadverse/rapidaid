@@ -21,7 +21,8 @@ export type StatusValue =
   | RequestStatus
   | Role
   | TripStatus
-  | UserStatus;
+  | UserStatus
+  | 'UNPAID';
 
 type Tone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 
@@ -46,6 +47,7 @@ const TONES: Record<StatusValue, Tone> = {
   EN_ROUTE_TO_HOSPITAL: 'info',
   ARRIVED_AT_HOSPITAL: 'success',
   PAID: 'success',
+  UNPAID: 'warning',
   FAILED: 'danger',
   AVAILABLE: 'success',
   ON_TRIP: 'info',

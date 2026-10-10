@@ -99,6 +99,7 @@ export type Payment = {
   gateway: string;
   paidAt: string | null;
   createdAt: string;
+  patient?: { id: string; name: string; email: string };
   trip: {
     id: string;
     status: TripStatus;
@@ -106,8 +107,12 @@ export type Payment = {
     fare: number | string | null;
     completedAt: string | null;
     hospital: { id: string; name: string; area: string } | null;
+    ambulance?: { id: string; regNumber: string };
+    driver?: { id: string; user: { id: string; name: string } };
   };
 };
+
+export type TripPayment = { id: string; status: PaymentStatus; paidAt: string | null };
 
 export type PaymentSession = Payment & { gatewayPageURL: string; sessionKey: string | null };
 
@@ -157,6 +162,7 @@ export type Trip = {
     status: RequestStatus;
     patient: { id: string; name: string; phone: string | null };
   };
+  payments?: TripPayment[];
 };
 
 export type Hospital = {
