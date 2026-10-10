@@ -2,8 +2,6 @@ import js from '@eslint/js';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
-import { createRequire } from 'module';
-
 
 export default tseslint.config(
   {
